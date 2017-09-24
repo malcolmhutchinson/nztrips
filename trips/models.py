@@ -56,10 +56,61 @@ TRIP_TYPE = (
 )
 
 # Create your models here.
+class TripTemplate(models.Model):
+    """Trip and template objects.
+
+    A template records a plan for an excursion. It may have many
+    points of interest and routes associated with it, and other
+    documents and file.
+
+    A trip plans for and records an event. It may be cloned from a
+    template, or created blank. A trup record will have a range of
+    dates associated with it. GPX files can be uploaded to trip
+    records, and the wypoints and
+
+    """
+
+    identifier = models.CharField(max_length=255, unique=True)
+    record_class = models.CharField(
+        max_length=64, choices=TRIPRECORD_CLASS, default='template')
+
+    trip_type = models.CharField(
+        max_length=64, choices=TRIP_TYPE, default='template')
+
+    name = models.CharField(max_length=255, blank=True, null=True)
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    region = models.CharField(max_length=255, blank=True, null=True)
+
+    start_date_planned = models.DateField(blank=True, null=True)
+    end_date_planned = models.DateField(blank=True, null=True)
+
+    start_date_actual = models.DateField(blank=True, null=True)
+    end_date_actual = models.DateField(blank=True, null=True)
+
+    def computeGPX(self):
+        """Return a GPX object from all routes and POIs in this trip."""
+
+        gpx = ''
+        return gpx
+
+    def topo250maps(self):
+        """Return a list of the Topo250 maps touched by this trip."""
+
+        maps = []
+        return maps
+
+    def topo50maps(self):
+        """Return a list of the Topo50 maps touched by this trip."""
+
+        maps = []
+        return maps
+
+
 class Equipment(models.Model):
     """List of available gear."""
 
-    trip = models.ManyToMany(TripTemplate)
+    trip = models.ManyToManyField(TripTemplate)
 
     kit_category = models.CharField(
         max_length=64, choices=KIT_CATEGORY, default='Unclassified')
@@ -178,7 +229,7 @@ class TrackPoint(models.Model):
     track_seg_id = models.IntegerField(blank=True, null=True, default=0)
     track_seg_point = models.IntegerField(blank=True, null=True, default=0)
     ele = models.FloatField(blank=True, null=True)
-    time = models.DateTieField(blank=True, null=True)
+    time = models.DateTimeField(blank=True, null=True)
     magvar = models.CharField(max_length=255, blank=True, null=True)
     geoidheight = models.CharField(max_length=255, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
@@ -228,57 +279,6 @@ class TripReport(models.Model):
     report_text = models.TextField(blank=True, null=True)
 
 
-class TripTemplate(models.Model):
-    """Trip and template objects.
-
-    A template records a plan for an excursion. It may have many
-    points of interest and routes associated with it, and other
-    documents and file.
-
-    A trip plans for and records an event. It may be cloned from a
-    template, or created blank. A trup record will have a range of
-    dates associated with it. GPX files can be uploaded to trip
-    records, and the wypoints and
-
-    """
-
-    identifier = models.charField(max_length=255, unique=True)
-    record_class = models.CharField(
-        max_length=64, choices=TRIPRECORD_CLASS, default='template')
-
-    trip_type = models.CharField(
-        max_length=64, choices=TRIP_TYPE, default='template')
-
-    name = models.CharField(max_length=255, blank=True, null=True)
-    owner = models.CharField(max_length=255, blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
-    region = models.CharField(max_length=255, blank=True, null=True)
-
-    start_date_planned = models.DateField(blank=True, null=True)
-    end_date_planned = models.DateField(blank=True, null=True)
-
-    start_date_actual = models.DateField(blank=True, null=True)
-    end_date_actual = models.DateField(blank=True, null=True)
-
-    def computeGPX(self):
-        """Return a GPX object from all routes and POIs in this trip."""
-
-        gpx = ''
-        return gpx
-
-    def topo250maps(self):
-        """Return a list of the Topo250 maps touched by this trip."""
-
-        maps = []
-        return maps
-
-    def topo50maps(self):
-        """Return a list of the Topo50 maps touched by this trip."""
-
-        maps = []
-        return maps
-
-
 class Waypoint(models.Model):
     """Incoming points.
 
@@ -287,7 +287,7 @@ class Waypoint(models.Model):
     trips = models.ForeignKey(TripTemplate)
 
     ele = models.FloatField(blank=True, null=True)
-    time = models.DateTieField(blank=True, null=True)
+    time = models.DateTimeField(blank=True, null=True)
     magvar = models.CharField(max_length=255, blank=True, null=True)
     geoidheight = models.CharField(max_length=255, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
