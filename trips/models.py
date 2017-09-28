@@ -5,17 +5,17 @@ from __future__ import unicode_literals
 from django.contrib.gis.db import models
 
 KIT_CATEGORY = (
-    ('Camping', 'Camping'),
-    ('Climbing', 'Climbing'),
-    ('Clothing', 'Clothing'),
-    ('Cooking/kitchen', 'Cooking/kitchen'),
-    ('Cycle', 'Cycle'),
-    ('First aid', 'First aid'),
-    ('Food', 'Food'),
-    ('Navigation', 'Navigation'),
-    ('Personal', 'Personal'),
-    ('Unclassified', 'Unclassified'),
-    ('Vehicle', 'Vehicle'),
+    ('camping', 'camping'),
+    ('climbing', 'climbing'),
+    ('clothing', 'clothing'),
+    ('cooking/kitchen', 'cooking/kitchen'),
+    ('cycle', 'cycle'),
+    ('first aid', 'first aid'),
+    ('food', 'food'),
+    ('navigation', 'navigation'),
+    ('personal', 'personal'),
+    ('unclassified', 'unclassified'),
+    ('vehicle', 'vehicle'),
 )
 
 QGIS_FIELDS = (
@@ -29,11 +29,16 @@ QGIS_FIELDS = (
     'urlname',
 )
 
+POINT_TYPE = (
+    ('campsite', 'campsite'),
+
+)
+
 REPORT_STATUS = (
-    ('Working', 'Working'),
-    ('Pending', 'Pending'),
-    ('Publshed', 'Published'),
-    ('Withdrawn', 'Withdrawn'),
+    ('working', 'working'),
+    ('pending', 'pending'),
+    ('publshed', 'published'),
+    ('withdrawn', 'withdrawn'),
 )
 
 SRID = {
@@ -71,23 +76,23 @@ class TripTemplate(models.Model):
     """
 
     identifier = models.CharField(max_length=255, unique=True)
-    record_class = models.CharField(
-        max_length=64, choices=TRIPRECORD_CLASS, default='template')
 
     trip_type = models.CharField(
         max_length=64, choices=TRIP_TYPE, default='template')
 
     name = models.CharField(max_length=255, blank=True, null=True)
-    owner = models.CharField(max_length=255, blank=True, null=True)
+    subject = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    region = models.CharField(max_length=255, blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
 
-    start_date_planned = models.DateField(blank=True, null=True)
-    end_date_planned = models.DateField(blank=True, null=True)
+    days_length = models.IntegerField(default=1)
 
-    start_date_actual = models.DateField(blank=True, null=True)
-    end_date_actual = models.DateField(blank=True, null=True)
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    group = models.CharField(max_length=255, blank=True, null=True)
 
+    class Meta:
+        abstract = True
+    
     def computeGPX(self):
         """Return a GPX object from all routes and POIs in this trip."""
 
@@ -107,37 +112,85 @@ class TripTemplate(models.Model):
         return maps
 
 
+class Template(TripTemplate):
+    """A Template is a general plan for an expedition.
+    """
+
+
+    
+class Trip(TripTemplate):
+    """A trip is a plan for and record of an actual expedition."""
+
+    start_date_planned = models.DateField(blank=True, null=True)
+    end_date_planned = models.DateField(blank=True, null=True)
+
+    start_date_actual = models.DateField(blank=True, null=True)
+    end_date_actual = models.DateField(blank=True, null=True)
+
+
+
+
+
+
+
+    
 class Equipment(models.Model):
     """List of available gear."""
-
-    trip = models.ManyToManyField(TripTemplate)
 
     kit_category = models.CharField(
         max_length=64, choices=KIT_CATEGORY, default='Unclassified')
 
     identifier = models.CharField(max_length=255, blank=True, null=True)
-    owner = models.CharField(max_length=255, blank=True, null=True)
+
     name = models.CharField(max_length=255, blank=True, null=True)
     description = models.CharField(max_length=255, blank=True, null=True)
 
-class PointsOfInterest(models.Model):
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    group = models.CharField(max_length=255, blank=True, null=True)
+
+
+class GPXfile(models.Model):
+    """Track files uploaded by the interface."""
+
+
+    
+class PointOfInterest(models.Model):
     """Outgoing points."""
 
-    templates = models.ManyToManyField(TripTemplate)
-    trips = models.ManyToManyField(TripTemplate)
+    trip = models.ManyToManyField(Trip)
+    template = models.ManyToManyField(Template)
 
-    name = models.CharField(max_length=255, blank=True, null=True)
-    symbol = models.CharField(max_length=255, blank=True, null=True)
-    number = models.CharField(max_length=255, blank=True, null=True)
-    description = models.CharField(max_length=255, blank=True, null=True)
-    source = models.CharField(max_length=255, blank=True, null=True)
-    url = models.CharField(max_length=255, blank=True, null=True)
-    urlname = models.CharField(max_length=255, blank=True, null=True)
+    age_of_dgps_data = models.TextField(blank=True, null=True)
+    comment = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    dgps_id = models.TextField(blank=True, null=True)
+    elevation = models.TextField(blank=True, null=True)
+    extensions = models.TextField(blank=True, null=True)
+    geoid_height = models.TextField(blank=True, null=True)
+    horizontal_dilution = models.TextField(blank=True, null=True)
+    latitude = models.TextField(blank=True, null=True)
+    link = models.TextField(blank=True, null=True)
+    link_text = models.TextField(blank=True, null=True)
+    link_type = models.TextField(blank=True, null=True)
+    longitude = models.TextField(blank=True, null=True)
+    magnetic_variation = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    position_dilution = models.TextField(blank=True, null=True)
+    satellites = models.TextField(blank=True, null=True)
+    source = models.TextField(blank=True, null=True)
+    symbol = models.TextField(blank=True, null=True)
+    time = models.TextField(blank=True, null=True)
+    gtype = models.TextField(blank=True, null=True)
+    type_of_gpx_fix = models.TextField(blank=True, null=True)
+    vertical_dilution = models.TextField(blank=True, null=True)
+
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    group = models.CharField(max_length=255, blank=True, null=True)
 
     geom = models.PointField(srid=SRID['WGS84'])
 
     def nztm(self):
-        """Return a geometry representing thsi point in NZTM 2000.
+        """Return a geometry representing this point in NZTM 2000.
         """
 
     def topo250map(self):
@@ -160,105 +213,136 @@ class Route(models.Model):
 
     These may be shared amongst trips and trip templates."""
 
-    templates = models.ManyToManyField(TripTemplate)
-    trips = models.ManyToManyField(TripTemplate)
+    trip = models.ManyToManyField(Trip)
+    template = models.ManyToManyField(Template)
+
+    comment = models.CharField(max_length=255, blank=True, null=True)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    extensions = models.CharField(max_length=255, blank=True, null=True)
+    gtype = models.CharField(max_length=255, blank=True, null=True)
+    link = models.CharField(max_length=255, blank=True, null=True)
+    link_text = models.CharField(max_length=255, blank=True, null=True)
+    link_type = models.CharField(max_length=255, blank=True, null=True)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    number = models.CharField(max_length=255, blank=True, null=True)
+    points = models.CharField(max_length=255, blank=True, null=True)
+    source = models.CharField(max_length=255, blank=True, null=True)
+
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    group = models.CharField(max_length=255, blank=True, null=True)
 
     geom = models.MultiLineStringField(srid=SRID['WGS84'])
 
     def computeGPX(self):
         """Return a GPX object (string) from this route."""
 
-    def computePoints(self):
-        """Return a list of points extracted from the linestring geom.
 
-        The list will be suitable for injecting into the database,
-        replacing any which may already be associated with this route.
-
-        """
 
 class RoutePoint(models.Model):
     """Points associated with a route."""
 
     route = models.ForeignKey(Route)
 
-    name = models.CharField(max_length=255, blank=True, null=True)
-    symbol = models.CharField(max_length=255, blank=True, null=True)
-    number = models.CharField(max_length=255, blank=True, null=True)
-    description = models.CharField(max_length=255, blank=True, null=True)
-    source = models.CharField(max_length=255, blank=True, null=True)
-    url = models.CharField(max_length=255, blank=True, null=True)
-    urlname = models.CharField(max_length=255, blank=True, null=True)
+    age_of_dgps_data = models.TextField(blank=True, null=True)
+    comment = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    dgps_id = models.TextField(blank=True, null=True)
+    elevation = models.TextField(blank=True, null=True)
+    extensions = models.TextField(blank=True, null=True)
+    geoid_height = models.TextField(blank=True, null=True)
+    gtype = models.TextField(blank=True, null=True)
+    horizontal_dilution = models.TextField(blank=True, null=True)
+    latitude = models.TextField(blank=True, null=True)
+    link = models.TextField(blank=True, null=True)
+    link_text = models.TextField(blank=True, null=True)
+    link_type = models.TextField(blank=True, null=True)
+    longitude = models.TextField(blank=True, null=True)
+    magnetic_variation = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    position_dilution = models.TextField(blank=True, null=True)
+    satellites = models.TextField(blank=True, null=True)
+    source = models.TextField(blank=True, null=True)
+    symbol = models.TextField(blank=True, null=True)
+    time = models.TextField(blank=True, null=True)
+    type_of_gpx_fix = models.TextField(blank=True, null=True)
+    vertical_dilution = models.TextField(blank=True, null=True)
 
     geom = models.PointField(srid=SRID['WGS84'])
+
 
 
 class Track(models.Model):
     """Incoming linear features.
 
-    A track may only belong to one trip record.
+    A track may only belong to one trip record. The field names are
+    taken from the GDAL file translator.
+
     """
 
-    trips = models.ForeignKey(TripTemplate)
+    trip = models.ForeignKey(Trip)
 
-    name = models.CharField(max_length=255, blank=True, null=True)
-    cmt = models.CharField(max_length=255, blank=True, null=True)
-    desc = models.CharField(max_length=255, blank=True, null=True)
-    src = models.CharField(max_length=255, blank=True, null=True)
-    link1_href = models.CharField(max_length=255, blank=True, null=True)
-    link1_text = models.CharField(max_length=255, blank=True, null=True)
-    link1_type = models.CharField(max_length=255, blank=True, null=True)
-    link2_href = models.CharField(max_length=255, blank=True, null=True)
-    link2_text = models.CharField(max_length=255, blank=True, null=True)
-    link2_type = models.CharField(max_length=255, blank=True, null=True)
-    number = models.CharField(max_length=255, blank=True, null=True)
-    gpxtype = models.CharField(max_length=255, blank=True, null=True)
-    gpxx_TrackExtension = models.CharField(max_length=255, blank=True, null=True)
+    comment = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    extensions = models.TextField(blank=True, null=True)
+    gtype = models.TextField(blank=True, null=True)
+    link = models.TextField(blank=True, null=True)
+    link_text = models.TextField(blank=True, null=True)
+    link_type = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    number = models.TextField(blank=True, null=True)
+    source = models.TextField(blank=True, null=True)
 
     geom = models.MultiLineStringField(srid=SRID['WGS84'])
 
     owner = models.CharField(max_length=255, blank=True, null=True)
-    acquired = models.DateTimeField(blank=True, null=True)
+    group = models.CharField(max_length=255, blank=True, null=True)
 
 
+
+class TrackSegment(models.Model):
+    track = models.ForeignKey(Track)
+    extensions = models.TextField(blank=True, null=True)
+
+    
 class TrackPoint(models.Model):
     """Incoming points associated with a track."""
 
-    track = models.ForeignKey(Track)
+    segment = models.ForeignKey(TrackSegment)
 
-    track_fid = models.IntegerField(blank=True, null=True, default=0)
-    track_seg_id = models.IntegerField(blank=True, null=True, default=0)
-    track_seg_point = models.IntegerField(blank=True, null=True, default=0)
-    ele = models.FloatField(blank=True, null=True)
-    time = models.DateTimeField(blank=True, null=True)
-    magvar = models.CharField(max_length=255, blank=True, null=True)
-    geoidheight = models.CharField(max_length=255, blank=True, null=True)
-    name = models.CharField(max_length=255, blank=True, null=True)
-    cmt = models.CharField(max_length=255, blank=True, null=True)
-    desc = models.CharField(max_length=255, blank=True, null=True)
-    src = models.CharField(max_length=255, blank=True, null=True)
-    link1_href = models.CharField(max_length=255, blank=True, null=True)
-    link1_text = models.CharField(max_length=255, blank=True, null=True)
-    link1_type = models.CharField(max_length=255, blank=True, null=True)
-    link2_href = models.CharField(max_length=255, blank=True, null=True)
-    link2_text = models.CharField(max_length=255, blank=True, null=True)
-    link2_type = models.CharField(max_length=255, blank=True, null=True)
-    sym = models.CharField(max_length=255, blank=True, null=True)
-    gpsxtype = models.CharField(max_length=255, blank=True, null=True)
-    fix = models.CharField(max_length=255, blank=True, null=True)
-    sat = models.CharField(max_length=255, blank=True, null=True)
-    hdop = models.CharField(max_length=255, blank=True, null=True)
-    vdop = models.CharField(max_length=255, blank=True, null=True)
-    pdop = models.CharField(max_length=255, blank=True, null=True)
-    ageofgpdsata = models.CharField(max_length=255, blank=True, null=True)
-    dgpsid = models.CharField(max_length=255, blank=True, null=True)
+    age_of_dgps_data = models.TextField(blank=True, null=True)
+    comment = models.TextField(blank=True, null=True)
+    course = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    dgps_id = models.TextField(blank=True, null=True)
+    elevation = models.TextField(blank=True, null=True)
+    extensions = models.TextField(blank=True, null=True)
+    geoid_height = models.TextField(blank=True, null=True)
+    gtype = models.TextField(blank=True, null=True)
+    horizontal_dilution = models.TextField(blank=True, null=True)
+    latitude = models.TextField(blank=True, null=True)
+    link = models.TextField(blank=True, null=True)
+    link_text = models.TextField(blank=True, null=True)
+    link_type = models.TextField(blank=True, null=True)
+    longitude = models.TextField(blank=True, null=True)
+    magnetic_variation = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    position_dilution = models.TextField(blank=True, null=True)
+    satellites = models.TextField(blank=True, null=True)
+    source = models.TextField(blank=True, null=True)
+    speed = models.TextField(blank=True, null=True)
+    symbol = models.TextField(blank=True, null=True)
+    time = models.TextField(blank=True, null=True)
+    type_of_gpx_fix = models.TextField(blank=True, null=True)
+    vertical_dilution = models.TextField(blank=True, null=True)
 
     geom = models.PointField(srid=SRID['WGS84'])
 
-
+    
 class TripKit(models.Model):
     """Lists of equipment items chosen for this trip."""
 
-    trip = models.ForeignKey(TripTemplate)
+    trip = models.ForeignKey(Trip)
+
     kit = models.OneToOneField(
         Equipment, on_delete=models.CASCADE, primary_key=True,
     )
@@ -270,7 +354,8 @@ class TripReport(models.Model):
     """A trip report records written and photographic reports of a trip.
     """
 
-    trip = models.ForeignKey(TripTemplate)
+    trip = models.ForeignKey(Trip)
+    
     status = models.CharField(
         max_length=64, choices=REPORT_STATUS, default='Unclassified')
 
@@ -284,31 +369,34 @@ class Waypoint(models.Model):
 
     A waypoint may belong to only one trip record."""
 
-    trips = models.ForeignKey(TripTemplate)
+    trips = models.ForeignKey(Trip)
 
-    ele = models.FloatField(blank=True, null=True)
-    time = models.DateTimeField(blank=True, null=True)
-    magvar = models.CharField(max_length=255, blank=True, null=True)
-    geoidheight = models.CharField(max_length=255, blank=True, null=True)
-    name = models.CharField(max_length=255, blank=True, null=True)
-    cmt = models.CharField(max_length=255, blank=True, null=True)
-    desc = models.CharField(max_length=255, blank=True, null=True)
-    src = models.CharField(max_length=255, blank=True, null=True)
-    link1_href = models.CharField(max_length=255, blank=True, null=True)
-    link1_text = models.CharField(max_length=255, blank=True, null=True)
-    link1_type = models.CharField(max_length=255, blank=True, null=True)
-    link2_href = models.CharField(max_length=255, blank=True, null=True)
-    link2_text = models.CharField(max_length=255, blank=True, null=True)
-    link2_type = models.CharField(max_length=255, blank=True, null=True)
-    sym = models.CharField(max_length=255, blank=True, null=True)
-    gpsxtype = models.CharField(max_length=255, blank=True, null=True)
-    fix = models.CharField(max_length=255, blank=True, null=True)
-    sat = models.CharField(max_length=255, blank=True, null=True)
-    hdop = models.CharField(max_length=255, blank=True, null=True)
-    vdop = models.CharField(max_length=255, blank=True, null=True)
-    pdop = models.CharField(max_length=255, blank=True, null=True)
-    ageofgpdsata = models.CharField(max_length=255, blank=True, null=True)
-    dgpsid = models.CharField(max_length=255, blank=True, null=True)
+    age_of_dgps_data = models.TextField(blank=True, null=True)
+    comment = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    dgps_id = models.TextField(blank=True, null=True)
+    elevation = models.TextField(blank=True, null=True)
+    extensions = models.TextField(blank=True, null=True)
+    geoid_height = models.TextField(blank=True, null=True)
+    horizontal_dilution = models.TextField(blank=True, null=True)
+    latitude = models.TextField(blank=True, null=True)
+    link = models.TextField(blank=True, null=True)
+    link_text = models.TextField(blank=True, null=True)
+    link_type = models.TextField(blank=True, null=True)
+    longitude = models.TextField(blank=True, null=True)
+    magnetic_variation = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    position_dilution = models.TextField(blank=True, null=True)
+    satellites = models.TextField(blank=True, null=True)
+    source = models.TextField(blank=True, null=True)
+    symbol = models.TextField(blank=True, null=True)
+    time = models.TextField(blank=True, null=True)
+    gtype = models.TextField(blank=True, null=True)
+    type_of_gpx_fix = models.TextField(blank=True, null=True)
+    vertical_dilution = models.TextField(blank=True, null=True)
+
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    group = models.CharField(max_length=255, blank=True, null=True)
 
     geom = models.PointField(srid=SRID['WGS84'])
 
@@ -329,3 +417,4 @@ class Waypoint(models.Model):
 
         topo50 = None
         return topo50
+
