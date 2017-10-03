@@ -69,9 +69,10 @@ class TripTemplate(models.Model):
     documents and file.
 
     A trip plans for and records an event. It may be cloned from a
-    template, or created blank. A trup record will have a range of
+    template, or created blank. A trip record will have a range of
     dates associated with it. GPX files can be uploaded to trip
-    records, and the wypoints and
+    records, and any waypoints, tracks our rutes in that file injected
+    into the datbase.
 
     """
 
@@ -143,13 +144,14 @@ class Equipment(models.Model):
     group = models.CharField(max_length=255, blank=True, null=True)
 
 
-class GPXfile(models.Model):
-    """Track files uploaded by the interface."""
+class PointsOfInterest(models.Model):
+    """Outgoing points.
 
+    Points of interests are intended to be uploaded to a GPS device
+    and used in the field. Waypoints are points generated in the field,
+    which are downloaded into the database.
 
-    
-class PointOfInterest(models.Model):
-    """Outgoing points."""
+    """
 
     trip = models.ManyToManyField(Trip)
     template = models.ManyToManyField(Template)
@@ -195,7 +197,7 @@ class PointOfInterest(models.Model):
         return topo250
 
     def topo50map(self):
-        """Return the name of the Topo250 map this point falls on.
+        """Return the name of the Topo50 map this point falls on.
         """
 
         topo50 = None
