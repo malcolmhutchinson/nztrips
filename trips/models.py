@@ -4,61 +4,11 @@ from __future__ import unicode_literals
 #from django.db import models
 from django.contrib.gis.db import models
 
-KIT_CATEGORY = (
-    ('camping', 'camping'),
-    ('climbing', 'climbing'),
-    ('clothing', 'clothing'),
-    ('cooking/kitchen', 'cooking/kitchen'),
-    ('cycle', 'cycle'),
-    ('first aid', 'first aid'),
-    ('food', 'food'),
-    ('navigation', 'navigation'),
-    ('personal', 'personal'),
-    ('unclassified', 'unclassified'),
-    ('vehicle', 'vehicle'),
-)
-
-QGIS_FIELDS = (
-    'name',
-    'symbol',
-    'number',
-    'comment',
-    'description',
-    'source',
-    'url',
-    'urlname',
-)
-
-POINT_TYPE = (
-    ('campsite', 'campsite'),
-
-)
-
-REPORT_STATUS = (
-    ('working', 'working'),
-    ('pending', 'pending'),
-    ('publshed', 'published'),
-    ('withdrawn', 'withdrawn'),
-)
-
 SRID = {
     'NZTM': 2193,
     'WGS84': 4326,
 }
 
-
-TRIPRECORD_CLASS = (
-    ('template', 'template'),
-    ('trip', 'trip'),
-)
-
-TRIP_TYPE = (
-    ('air', 'air'),
-    ('boat', 'boat'),
-    ('cycle', 'cycle'),
-    ('road', 'road'),
-    ('tramping', 'tramping'),
-)
 
 # Create your models here.
 class TripTemplate(models.Model):
@@ -74,13 +24,25 @@ class TripTemplate(models.Model):
     records, and any waypoints, tracks our rutes in that file injected
     into the datbase.
 
-    The idntifier should be a universal unique identifier
+    The identifier should be a universal unique identifier
 
-    import uuid
-    uuid.uuid4().hex
+        import uuid
+        uuid.uuid4().hex
+
+    Should yield something like this 32 character string:
+
+        70d0209ecd564104936dc2c09cfaeabe
     """
 
-    identifier = models.CharField(max_length=255, unique=True)
+    TRIP_TYPE = (
+        ('air', 'air'),
+        ('boat', 'boat'),
+        ('cycle', 'cycle'),
+        ('road', 'road'),
+        ('tramping', 'tramping'),
+    )
+
+    identifier = models.CharField(max_length=32,primary_key=True)
 
     trip_type = models.CharField(
         max_length=64, choices=TRIP_TYPE, default='tramping')
@@ -122,10 +84,21 @@ class Template(TripTemplate):
     """
 
 
+class TemplateNote(models.Model):
+    """Simple text notes attached to a template record."""
+
+    trip = models.ForeignKey(Template)
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    group = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=255, blank=True, null=True)
+    content = models.TextField(blank=True, null=True)    
+    
     
 class Trip(TripTemplate):
     """A trip is a plan for and record of an actual expedition."""
 
+    templates = models.ManyToManyField(Template)
+    
     start_date_planned = models.DateField(blank=True, null=True)
     end_date_planned = models.DateField(blank=True, null=True)
 
@@ -133,21 +106,16 @@ class Trip(TripTemplate):
     end_date_actual = models.DateField(blank=True, null=True)
 
     
-class Equipment(models.Model):
-    """List of available gear."""
+class TripNote(models.Model):
+    """Simple text notes attached to a trip record."""
 
-    kit_category = models.CharField(
-        max_length=64, choices=KIT_CATEGORY, default='Unclassified')
-
-    identifier = models.CharField(max_length=255, blank=True, null=True)
-
-    name = models.CharField(max_length=255, blank=True, null=True)
-    description = models.CharField(max_length=255, blank=True, null=True)
-
+    trips = models.ForeignKey(Trip, related_name='notes')
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
-
-
+    status = models.CharField(max_length=255, blank=True, null=True)
+    content = models.TextField(blank=True, null=True)    
+    
+    
 class PointsOfInterest(models.Model):
     """Outgoing points.
 
@@ -157,8 +125,8 @@ class PointsOfInterest(models.Model):
 
     """
 
-    trip = models.ManyToManyField(Trip)
-    template = models.ManyToManyField(Template)
+    trips = models.ManyToManyField(Trip, related_name='pois')
+    template = models.ManyToManyField(Template, related_name='pois')
 
     age_of_dgps_data = models.TextField(blank=True, null=True)
     comment = models.TextField(blank=True, null=True)
@@ -186,7 +154,8 @@ class PointsOfInterest(models.Model):
 
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
-
+    status = models.CharField(max_length=255, blank=True, null=True)
+    
     geom = models.PointField(srid=SRID['WGS84'])
 
     def nztm(self):
@@ -213,37 +182,26 @@ class Route(models.Model):
 
     These may be shared amongst trips and trip templates."""
 
-    trip = models.ManyToManyField(Trip)
+    trips = models.ManyToManyField(Trip)
     template = models.ManyToManyField(Template)
 
-    comment = models.CharField(max_length=255, blank=True, null=True)
-    description = models.CharField(max_length=255, blank=True, null=True)
-    extensions = models.CharField(max_length=255, blank=True, null=True)
-    gtype = models.CharField(max_length=255, blank=True, null=True)
-    link = models.CharField(max_length=255, blank=True, null=True)
-    link_text = models.CharField(max_length=255, blank=True, null=True)
-    link_type = models.CharField(max_length=255, blank=True, null=True)
-    name = models.CharField(max_length=255, blank=True, null=True)
-    number = models.CharField(max_length=255, blank=True, null=True)
-    points = models.CharField(max_length=255, blank=True, null=True)
-    source = models.CharField(max_length=255, blank=True, null=True)
+    comment = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    extensions = models.TextField(blank=True, null=True)
+    gpxtype = models.TextField(blank=True, null=True)
+    link = models.TextField(blank=True, null=True)
+    link_text = models.TextField(blank=True, null=True)
+    link_type = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    number = models.TextField(blank=True, null=True)
+    points = models.TextField(blank=True, null=True)
+    source = models.TextField(blank=True, null=True)
 
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=255, blank=True, null=True)
 
-    comment
-    name
-    link_text
-    number
-    source
-    points
-    link
-    extensions
-    gpxtype
-    link_type
-    description
-
-    geom = models.MultiLineStringField(srid=SRID['WGS84'])
+    geom = models.LineStringField(srid=SRID['WGS84'])
 
     def computeGPX(self):
         """Return a GPX object (string) from this route."""
@@ -279,6 +237,8 @@ class RoutePoint(models.Model):
     type_of_gpx_fix = models.TextField(blank=True, null=True)
     vertical_dilution = models.TextField(blank=True, null=True)
 
+    ordinal = models.IntegerField(default=0)
+    status = models.CharField(max_length=255, blank=True, null=True)
     geom = models.PointField(srid=SRID['WGS84'])
 
 
@@ -304,16 +264,19 @@ class Track(models.Model):
     number = models.TextField(blank=True, null=True)
     source = models.TextField(blank=True, null=True)
 
-    geom = models.MultiLineStringField(srid=SRID['WGS84'])
-
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=255, blank=True, null=True)
 
+    geom = models.MultiLineStringField(srid=SRID['WGS84'], blank=True, null=True)
 
 
 class TrackSegment(models.Model):
     track = models.ForeignKey(Track)
     extensions = models.TextField(blank=True, null=True)
+
+    status = models.CharField(max_length=255, blank=True, null=True)
+    geom = models.LineStringField(srid=SRID['WGS84'], blank=True, null=True)
 
     
 class TrackPoint(models.Model):
@@ -321,34 +284,6 @@ class TrackPoint(models.Model):
 
     segment = models.ForeignKey(TrackSegment)
 
-<<<<<<< HEAD
-    track_fid = models.IntegerField(blank=True, null=True, default=0)
-    track_seg_id = models.IntegerField(blank=True, null=True, default=0)
-    track_seg_point = models.IntegerField(blank=True, null=True, default=0)
-    ele = models.FloatField(blank=True, null=True)
-    time = models.DateTimeField(blank=True, null=True)
-    magvar = models.CharField(max_length=255, blank=True, null=True)
-    geoidheight = models.CharField(max_length=255, blank=True, null=True)
-    name = models.CharField(max_length=255, blank=True, null=True)
-    cmt = models.CharField(max_length=255, blank=True, null=True)
-    desc = models.CharField(max_length=255, blank=True, null=True)
-    src = models.CharField(max_length=255, blank=True, null=True)
-    link1_href = models.CharField(max_length=255, blank=True, null=True)
-    link1_text = models.CharField(max_length=255, blank=True, null=True)
-    link1_type = models.CharField(max_length=255, blank=True, null=True)
-    link2_href = models.CharField(max_length=255, blank=True, null=True)
-    link2_text = models.CharField(max_length=255, blank=True, null=True)
-    link2_type = models.CharField(max_length=255, blank=True, null=True)
-    sym = models.CharField(max_length=255, blank=True, null=True)
-    gpxtype = models.CharField(max_length=255, blank=True, null=True)
-    fix = models.CharField(max_length=255, blank=True, null=True)
-    sat = models.CharField(max_length=255, blank=True, null=True)
-    hdop = models.CharField(max_length=255, blank=True, null=True)
-    vdop = models.CharField(max_length=255, blank=True, null=True)
-    pdop = models.CharField(max_length=255, blank=True, null=True)
-    ageofgpdsata = models.CharField(max_length=255, blank=True, null=True)
-    dgpsid = models.CharField(max_length=255, blank=True, null=True)
-=======
     age_of_dgps_data = models.TextField(blank=True, null=True)
     comment = models.TextField(blank=True, null=True)
     course = models.TextField(blank=True, null=True)
@@ -374,31 +309,27 @@ class TrackPoint(models.Model):
     time = models.TextField(blank=True, null=True)
     type_of_gpx_fix = models.TextField(blank=True, null=True)
     vertical_dilution = models.TextField(blank=True, null=True)
->>>>>>> 9442669bc2e413868ef04eab04b3882e1758abcc
 
+    ordinal = models.IntegerField(default=0)
+    status = models.CharField(max_length=255, blank=True, null=True)
     geom = models.PointField(srid=SRID['WGS84'])
 
     
-class TripKit(models.Model):
-    """Lists of equipment items chosen for this trip."""
-
-    trip = models.ForeignKey(Trip)
-
-    kit = models.OneToOneField(
-        Equipment, on_delete=models.CASCADE, primary_key=True,
-    )
-    notes = models.TextField(blank=True, null=True)
-
-
-
 class TripReport(models.Model):
     """A trip report records written and photographic reports of a trip.
     """
 
+    STATUS = (
+        ('working', 'working'),
+        ('pending', 'pending'),
+        ('publshed', 'published'),
+        ('withdrawn', 'withdrawn'),
+    )
+
     trip = models.ForeignKey(Trip)
     
     status = models.CharField(
-        max_length=64, choices=REPORT_STATUS, default='Unclassified')
+        max_length=64, choices=STATUS, default='Unclassified')
 
     date_pub = models.DateTimeField()
     author = models.CharField(max_length=255, blank=True,null=True)
@@ -438,6 +369,7 @@ class Waypoint(models.Model):
 
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=255, blank=True, null=True)
 
     geom = models.PointField(srid=SRID['WGS84'])
 
