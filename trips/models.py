@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 #from django.db import models
 from django.contrib.gis.db import models
 
+import uuid
+
 SRID = {
     'NZTM': 2193,
     'WGS84': 4326,
@@ -42,7 +44,7 @@ class TripTemplate(models.Model):
         ('tramping', 'tramping'),
     )
 
-    identifier = models.CharField(max_length=32,primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     trip_type = models.CharField(
         max_length=64, choices=TRIP_TYPE, default='tramping')
