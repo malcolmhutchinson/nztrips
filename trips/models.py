@@ -127,12 +127,6 @@ class Trip(TripTemplate):
     start_date_actual = models.DateField(blank=True, null=True)
     end_date_actual = models.DateField(blank=True, null=True)
 
-
-
-
-
-
-
     
 class Equipment(models.Model):
     """List of available gear."""
