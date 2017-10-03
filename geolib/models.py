@@ -10,7 +10,7 @@ class Topo250(models.Model):
 
     identifier = models.CharField(max_length=4, primary_key=True)
     sheet_name = models.TextField(blank=True, null=True)
-    geom = models.PolygonField(srid=2193)
+    geom = models.PolygonField(srid=4326)
 
     nzms_xmax = models.IntegerField()
     nzms_xmin = models.IntegerField()
@@ -24,7 +24,7 @@ class Topo50(models.Model):
 
     identifier = models.CharField(max_length=4, primary_key=True)
     sheet_name = models.TextField(blank=True, null=True)
-    geom = models.PolygonField(srid=2193)
+    geom = models.PolygonField(srid=4326)
 
     nzms_xmax = models.IntegerField()
     nzms_xmin = models.IntegerField()
