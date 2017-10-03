@@ -69,6 +69,10 @@ class TripTemplate(models.Model):
     records, and any waypoints, tracks our rutes in that file injected
     into the datbase.
 
+    The idntifier should be a universal unique identifier
+
+    import uuid
+    uuid.uuid4().hex
     """
 
     identifier = models.CharField(max_length=255, unique=True)
@@ -76,10 +80,9 @@ class TripTemplate(models.Model):
         max_length=64, choices=TRIPRECORD_CLASS, default='template')
 
     trip_type = models.CharField(
-        max_length=64, choices=TRIP_TYPE, default='template')
+        max_length=64, choices=TRIP_TYPE, default='tramping')
 
     name = models.CharField(max_length=255, blank=True, null=True)
-    owner = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     region = models.CharField(max_length=255, blank=True, null=True)
 
@@ -88,6 +91,9 @@ class TripTemplate(models.Model):
 
     start_date_actual = models.DateField(blank=True, null=True)
     end_date_actual = models.DateField(blank=True, null=True)
+
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    group = models.CharField(max_length=255, blank=True, null=True)
 
     def computeGPX(self):
         """Return a GPX object from all routes and POIs in this trip."""
@@ -170,6 +176,18 @@ class Route(models.Model):
     templates = models.ManyToManyField(TripTemplate)
     trips = models.ManyToManyField(TripTemplate)
 
+    comment
+    name
+    link_text
+    number
+    source
+    points
+    link
+    extensions
+    gpxtype
+    link_type
+    description
+
     geom = models.MultiLineStringField(srid=SRID['WGS84'])
 
     def computeGPX(self):
@@ -250,7 +268,7 @@ class TrackPoint(models.Model):
     link2_text = models.CharField(max_length=255, blank=True, null=True)
     link2_type = models.CharField(max_length=255, blank=True, null=True)
     sym = models.CharField(max_length=255, blank=True, null=True)
-    gpsxtype = models.CharField(max_length=255, blank=True, null=True)
+    gpxtype = models.CharField(max_length=255, blank=True, null=True)
     fix = models.CharField(max_length=255, blank=True, null=True)
     sat = models.CharField(max_length=255, blank=True, null=True)
     hdop = models.CharField(max_length=255, blank=True, null=True)
