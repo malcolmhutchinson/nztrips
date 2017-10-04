@@ -1,0 +1,51 @@
+{% extends 'framework.html' %}{% block main %}{% load staticfiles %}
+<h1>{{ h1 }}</h1>
+
+
+{% if trip %}
+
+<div class='triprecord'>
+<p>Trip identifier: {{ identifier }}</p>
+
+<h2>{{ trip.name }}</h2>
+
+<table>
+
+    <tr>
+
+        <th>subject</th>
+
+        <td>{{ trip.subject }}</td>
+
+    </tr>
+    <tr>
+
+        <th>description</th>
+
+        <td>{{ trip.description }}</td>
+
+    </tr>
+    <tr>
+
+        <th>location</th>
+
+        <td>{{ trip.location }}</td>
+
+    </tr>
+      
+</table>
+
+</div>
+{% else %}
+<div class='triplist'>
+
+    <h3>There are more than one trips with this identifier</h3>
+
+</div>
+{% endif %}
+
+
+
+
+</table>
+{% endblock %}

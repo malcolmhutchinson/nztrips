@@ -1,0 +1,37 @@
+{% extends 'framework.html' %}{% block main %}{% load staticfiles %}
+<h1>{{ h1 }}</h1>
+
+<table>
+
+    <tr>
+
+        <th>Trip name</th>
+        <th>subject</th>
+        <th>description</th>
+        <th>loction</th>
+
+
+
+    </tr>
+
+{% for trip in trips %}
+    <tr>
+
+        <td><a href='{{ trip.url }}'>{{ trip.name }}</a></td>
+
+        <td>{{ trip.subject }}</td>
+
+        <td>{{ trip.description }}</td>
+
+        <td>{{ trip.location }}</td>
+
+        
+    </tr>
+{% endfor %}      
+</table>
+
+
+
+
+
+{% endblock %}

@@ -1,4 +1,18 @@
 {% extends 'framework.html' %}{% block main %}{% load staticfiles %}
-<h1>This is the start of things</h1>
+<h1>Contents</h1>
 
+<p></p>
+{{ trip }}
+
+<table>
+{% for trip in trips %}
+    <tr>
+
+        <td><a href='{{ trip.url }}'>{{ trip.name }}</a></td>
+
+
+    </tr>  
+{% endfor %}
+
+</table>
 {% endblock %}

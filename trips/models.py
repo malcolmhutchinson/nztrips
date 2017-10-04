@@ -4,7 +4,11 @@ from __future__ import unicode_literals
 #from django.db import models
 from django.contrib.gis.db import models
 
+import gpxpy
+import os
 import uuid
+
+import trips.settings as settings
 
 SRID = {
     'NZTM': 2193,
@@ -61,7 +65,30 @@ class TripTemplate(models.Model):
 
     class Meta:
         abstract = True
-    
+
+    def __unicode__(self):
+        return self.name
+
+    def __get_absolute_url__(self):
+        #uri_steps =  str(self.id).split('-')
+        #uri = uri_steps[0]
+        return os.path.join(settings.BASE_URL, self.identifier())
+
+    url = property(__get_absolute_url__)
+
+    def identifier(self):
+        uri_steps =  str(self.id).split('-')
+        return uri_steps[0]
+
+    def find_filespace(self):
+        """Return a string pathname to this object's filespace in static files.
+        """
+
+        filepath = os.path.join(settings.STATICFILES_DIRECTORIES)
+
+
+        return filepath
+        
     def computeGPX(self):
         """Return a GPX object from all routes and POIs in this trip."""
 
@@ -190,7 +217,7 @@ class Route(models.Model):
     comment = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     extensions = models.TextField(blank=True, null=True)
-    gpxtype = models.TextField(blank=True, null=True)
+    gtype = models.TextField(blank=True, null=True)
     link = models.TextField(blank=True, null=True)
     link_text = models.TextField(blank=True, null=True)
     link_type = models.TextField(blank=True, null=True)
@@ -219,23 +246,23 @@ class RoutePoint(models.Model):
     comment = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     dgps_id = models.TextField(blank=True, null=True)
-    elevation = models.TextField(blank=True, null=True)
+    elevation = models.FloatField(blank=True, null=True)
     extensions = models.TextField(blank=True, null=True)
     geoid_height = models.TextField(blank=True, null=True)
     gtype = models.TextField(blank=True, null=True)
     horizontal_dilution = models.TextField(blank=True, null=True)
-    latitude = models.TextField(blank=True, null=True)
+    latitude = models.FloatField(blank=True, null=True)
     link = models.TextField(blank=True, null=True)
     link_text = models.TextField(blank=True, null=True)
     link_type = models.TextField(blank=True, null=True)
-    longitude = models.TextField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
     magnetic_variation = models.TextField(blank=True, null=True)
     name = models.TextField(blank=True, null=True)
     position_dilution = models.TextField(blank=True, null=True)
     satellites = models.TextField(blank=True, null=True)
     source = models.TextField(blank=True, null=True)
     symbol = models.TextField(blank=True, null=True)
-    time = models.TextField(blank=True, null=True)
+    time = models.DateTimeField(blank=True, null=True)
     type_of_gpx_fix = models.TextField(blank=True, null=True)
     vertical_dilution = models.TextField(blank=True, null=True)
 
@@ -291,16 +318,16 @@ class TrackPoint(models.Model):
     course = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     dgps_id = models.TextField(blank=True, null=True)
-    elevation = models.TextField(blank=True, null=True)
+    elevation = models.FloatField(blank=True, null=True)
     extensions = models.TextField(blank=True, null=True)
     geoid_height = models.TextField(blank=True, null=True)
     gtype = models.TextField(blank=True, null=True)
     horizontal_dilution = models.TextField(blank=True, null=True)
-    latitude = models.TextField(blank=True, null=True)
+    latitude = models.FloatField(blank=True, null=True)
     link = models.TextField(blank=True, null=True)
     link_text = models.TextField(blank=True, null=True)
     link_type = models.TextField(blank=True, null=True)
-    longitude = models.TextField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
     magnetic_variation = models.TextField(blank=True, null=True)
     name = models.TextField(blank=True, null=True)
     position_dilution = models.TextField(blank=True, null=True)
@@ -308,7 +335,7 @@ class TrackPoint(models.Model):
     source = models.TextField(blank=True, null=True)
     speed = models.TextField(blank=True, null=True)
     symbol = models.TextField(blank=True, null=True)
-    time = models.TextField(blank=True, null=True)
+    time = models.DateTimeField(blank=True, null=True)
     type_of_gpx_fix = models.TextField(blank=True, null=True)
     vertical_dilution = models.TextField(blank=True, null=True)
 
@@ -349,22 +376,22 @@ class Waypoint(models.Model):
     comment = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     dgps_id = models.TextField(blank=True, null=True)
-    elevation = models.TextField(blank=True, null=True)
+    elevation = models.FloatField(blank=True, null=True)
     extensions = models.TextField(blank=True, null=True)
     geoid_height = models.TextField(blank=True, null=True)
     horizontal_dilution = models.TextField(blank=True, null=True)
-    latitude = models.TextField(blank=True, null=True)
+    latitude = models.FloatField(blank=True, null=True)
     link = models.TextField(blank=True, null=True)
     link_text = models.TextField(blank=True, null=True)
     link_type = models.TextField(blank=True, null=True)
-    longitude = models.TextField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
     magnetic_variation = models.TextField(blank=True, null=True)
     name = models.TextField(blank=True, null=True)
     position_dilution = models.TextField(blank=True, null=True)
     satellites = models.TextField(blank=True, null=True)
     source = models.TextField(blank=True, null=True)
     symbol = models.TextField(blank=True, null=True)
-    time = models.TextField(blank=True, null=True)
+    time = models.DateTimeField(blank=True, null=True)
     gtype = models.TextField(blank=True, null=True)
     type_of_gpx_fix = models.TextField(blank=True, null=True)
     vertical_dilution = models.TextField(blank=True, null=True)
@@ -393,3 +420,85 @@ class Waypoint(models.Model):
         topo50 = None
         return topo50
 
+class GPXFile():
+    """Class to pocess a gpx file from upload or other place.
+
+    Consumes an element from request.FILES, or an opened file.
+
+    Will insert records into the database. 
+    """
+
+    gpx = None # Parsed gpxpy object
+    trip = None # A Trip object.
+    warnings = [] # List of strings.
+
+    def __init__(self, gpxfile, trip):
+        """Parse the file with gpxpy.
+
+        A GPX file must be associated with an existing trip record.
+        """
+
+        self.gpxfile = gpxfile
+        self.trip = trip
+        self.gpx = gpxpy.parse(gpxfile)
+
+        self.warnings.append("Processing gpxfile...")
+
+        self.warnings.extend(self.process_waypoints(self.gpx))
+
+
+    def process_waypoints(self, gpx):
+        """Extract waypoint data from GPX file, insert records into db.
+        """
+
+        warnings = [str(len(gpx.waypoints)) + ' waypoints']
+        
+        for waypoint in gpx.waypoints:
+
+            print "mag var", type(waypoint.magnetic_variation)
+
+            existing = Waypoint.objects.filter(
+                time=waypoint.time, latitude=waypoint.latitude,
+                longitude=waypoint.longitude,
+            )
+
+            data = {
+                'trip': self.trip_id,
+                'age_of_dgps_data': waypoint.age_of_dgps_data,
+                'comment': waypoint.comment,
+                'description': waypoint.description,
+                'dgps_id': waypoint.dgps_id,
+                'elevation': waypoint.elevation,
+                'extensions': waypoint.extensions,
+                'geoid_height': waypoint.geoid_height,
+                'horizontal_dilution': waypoint.horizontal_dilution,
+                'latitude': waypoint.latitude,
+                'link': waypoint.link,
+                'link_text': waypoint.link_text,
+                'link_type': waypoint.link_type,
+                'longitude': waypoint.longitude,
+                'magnetic_variation': waypoint.magnetic_variation,
+                'name': waypoint.name,
+                'position_dilution': waypoint.position_dilution,
+                'satellites': waypoint.satellites,
+                'source': waypoint.source,
+                'symbol': waypoint.symbol,
+                'time': waypoint.time,
+                'gtype': waypoint.type,
+                'type_of_gpx_fix': waypoint.type_of_gpx_fix,
+                'vertical_dilution': waypoint.vertical_dilution,
+            }
+            
+            p = Waypoint(**data)
+
+            
+            warnings.append(
+                " ".join(
+                    (waypoint.name,
+                    str(waypoint.latitude),
+                     str(waypoint.longitude),
+                    )
+                )
+            )
+
+        return warnings
