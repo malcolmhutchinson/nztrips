@@ -20,9 +20,9 @@
     </tr>
     <tr>
 
-        <th>filespace</th>
+        <th>description</th>
 
-        <td>{{ trip.find_filespace }}</td>
+        <td>{{ trip.description }}</td>
 
     </tr>
     <tr>
@@ -41,8 +41,20 @@
       
 </table>
 
+
+<div class='attachments'>
+
+  <h3>Files associated with this trip</h3>
+
+<ol>
+{% for item in directory.model.all %}<li>{{ item }} </li>{% endfor %}
+</ol>
+</div>
+
 </div>
 {% elif trips.count == 0 %}
+
+
 
 <h3>We can't seem to find this trip record</h3>
 

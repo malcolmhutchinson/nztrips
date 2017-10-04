@@ -32,10 +32,11 @@ def index(request):
 def triptemplate(request, identifier):
 
     trip = None
+    directory = None
     trips = models.Trip.objects.filter(id__contains=identifier)
     if trips.count() == 1:
         trip = trips[0]
-
+        directory = trip.parse_filespace()
         
     template = 'trips/triptemplate.html'
 
@@ -45,6 +46,9 @@ def triptemplate(request, identifier):
 
         if request.FILES:
             trip.save(files=request.FILES)
+
+        trip = models.Trip.objects.get(id=trip.id)
+        directory = trip.parse_filespace()
             
         #for warning in s.warnings:
         #    print warning
@@ -57,6 +61,7 @@ def triptemplate(request, identifier):
         'trips': trips,
         'uploadFile': forms.UploadFile(),
         'forms': True,
+        'directory': directory,
     }
     
     return render(request, template, context)

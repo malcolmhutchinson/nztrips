@@ -8,6 +8,8 @@ import gpxpy
 import os
 import uuid
 
+import webnote
+
 import trips.settings as settings
 
 SRID = {
@@ -74,6 +76,15 @@ class TripTemplate(models.Model):
 
     url = property(__get_absolute_url__)
 
+    def parse_filespace(self):
+        """Return a webnote.Directory object of the filespace."""
+
+        filespace = self.find_filespace()
+        if not os.path.isdir(filespace):
+            self.make_filespace()
+        directory = webnote.Directory(filespace)
+
+        return directory
 
     def save(self, files=None, *args, **kwargs):
         """Save any uploaded file to filespace."""
