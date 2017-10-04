@@ -35,13 +35,28 @@ def triptemplate(request, identifier):
     trips = models.Trip.objects.filter(id__contains=identifier)
     if trips.count() == 1:
         trip = trips[0]
-    
+
+        
     template = 'trips/triptemplate.html'
+
+    if request.POST:
+
+        #s = models.GPXFile(request.FILES['gpx'], trip=trip)
+
+        if request.FILES:
+            trip.save(files=request.FILES)
+            
+        #for warning in s.warnings:
+        #    print warning
+
+
     context = {
         'h1': "Trip or template",
         'identifier': identifier,
         'trip': trip,
         'trips': trips,
+        'uploadFile': forms.UploadFile(),
+        'forms': True,
     }
     
     return render(request, template, context)

@@ -70,13 +70,37 @@ class TripTemplate(models.Model):
         return self.name
 
     def __get_absolute_url__(self):
-        #uri_steps =  str(self.id).split('-')
-        #uri = uri_steps[0]
         return os.path.join(settings.BASE_URL, self.identifier())
 
     url = property(__get_absolute_url__)
 
+
+    def save(self, files=None, *args, **kwargs):
+        """Save any uploaded file to filespace."""
+
+        if not os.path.isdir(self.find_filespace()):
+            self.make_filespace()
+            
+        if files:
+            for item in files:
+                print "ITEM", item, type(item)
+                f = files[item]
+                print "F", f, type(f)
+                filepath = os.path.join(self.find_filespace(), str(f))
+                print "FILEPATH", filepath
+                with open(filepath, 'wb+') as destination:
+                    for chunk in f.chunks():
+                        destination.write(chunk)
+
+        
+
+        super(TripTemplate, self).save(*args, **kwargs)
+
+        
+    
     def identifier(self):
+        """The first eight characters of the uuid, chopped by hyphen."""
+        
         uri_steps =  str(self.id).split('-')
         return uri_steps[0]
 
@@ -84,10 +108,21 @@ class TripTemplate(models.Model):
         """Return a string pathname to this object's filespace in static files.
         """
 
-        filepath = os.path.join(settings.STATICFILES_DIRECTORIES)
+        dirname = self.name.replace(' ', '-').replace("'", "")
+        dirname = dirname + '_' + self.identifier()
 
+        filepath = os.path.join(
+            settings.STATICFILES_DIR, settings.BASE_FILESPACE, dirname
+        )
 
         return filepath
+
+    def make_filespace(self):
+        if not os.path.isdir(self.find_filespace()):
+            os.mkdir(self.find_filespace())
+            return True
+        return False
+
         
     def computeGPX(self):
         """Return a GPX object from all routes and POIs in this trip."""

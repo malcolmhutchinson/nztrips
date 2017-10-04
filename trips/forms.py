@@ -13,7 +13,7 @@ class TripRecord(forms.ModelForm):
             'location',
         ]
 
-class UploadGPX(forms.Form):
-    gpx = forms.FileField(required=False)
+class UploadFile(forms.Form):
+    uploadFile = forms.FileField(required=False)
 
         

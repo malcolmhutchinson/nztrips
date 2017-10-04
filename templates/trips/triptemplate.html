@@ -20,9 +20,9 @@
     </tr>
     <tr>
 
-        <th>description</th>
+        <th>filespace</th>
 
-        <td>{{ trip.description }}</td>
+        <td>{{ trip.find_filespace }}</td>
 
     </tr>
     <tr>
@@ -32,10 +32,20 @@
         <td>{{ trip.location }}</td>
 
     </tr>
+
+    <p>Upload a gpx file</p>
+
+    {{ uploadFile.as_p }}
+
+    <input type='submit' name='upload' value='upload' />
       
 </table>
 
 </div>
+{% elif trips.count == 0 %}
+
+<h3>We can't seem to find this trip record</h3>
+
 {% else %}
 <div class='triplist'>
 

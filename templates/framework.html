@@ -21,7 +21,7 @@
 </head>
 <body>
 
-{% if tripForm %}
+{% if forms %}
 <form action = '' method='post' enctype="multipart/form-data">
 {% csrf_token %}
 {% endif %}
@@ -29,7 +29,7 @@
 {% block main %}{% endblock %}
 
 
-{% if tripForm %}
+{% if forms %}
 </form>
 {% endif %}
 
