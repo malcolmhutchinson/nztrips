@@ -10,12 +10,11 @@ def index(request):
     template = 'index.html'
     context = {
         'title': 'The title',
-        'tripForm': trips.forms.TripRecord(),
-        'uploadGPX': trips.forms.UploadGPX(),
+
         'trips': trips.models.Trip.objects.all(),
     }
 
-    trip = models.Trip.objects.get(id='b1ee6b0c-cb33-433d-b658-2ae1ea4a2d8f')
+    #trip = models.Trip.objects.get(id='b1ee6b0c-cb33-433d-b658-2ae1ea4a2d8f')
 
     if request.POST:
 

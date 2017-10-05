@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 
 #from django.db import models
 from django.contrib.gis.db import models
+from django.contrib.gis.geos import Point, LineString, MultiLineString
+from django.utils.timezone import make_aware
 
 import gpxpy
 import os
@@ -76,10 +78,13 @@ class TripTemplate(models.Model):
 
     url = property(__get_absolute_url__)
 
+    def waypoints(self):
+        return Waypoint.objects.filter(trip=self)
+
     def parse_filespace(self):
         """Return a webnote.Directory object of the filespace."""
 
-        filespace = self.find_filespace()
+        filespace = self.filespace()
         if not os.path.isdir(filespace):
             self.make_filespace()
         directory = webnote.Directory(filespace)
@@ -89,33 +94,30 @@ class TripTemplate(models.Model):
     def save(self, files=None, *args, **kwargs):
         """Save any uploaded file to filespace."""
 
-        if not os.path.isdir(self.find_filespace()):
+        if not os.path.isdir(self.filespace()):
             self.make_filespace()
-            
+
         if files:
             for item in files:
-                print "ITEM", item, type(item)
+
                 f = files[item]
-                print "F", f, type(f)
-                filepath = os.path.join(self.find_filespace(), str(f))
-                print "FILEPATH", filepath
+                filepath = os.path.join(
+                    self.filespace(), str(f))
+
                 with open(filepath, 'wb+') as destination:
                     for chunk in f.chunks():
                         destination.write(chunk)
 
-        
-
         super(TripTemplate, self).save(*args, **kwargs)
 
-        
-    
+
     def identifier(self):
         """The first eight characters of the uuid, chopped by hyphen."""
-        
+
         uri_steps =  str(self.id).split('-')
         return uri_steps[0]
 
-    def find_filespace(self):
+    def filespace(self):
         """Return a string pathname to this object's filespace in static files.
         """
 
@@ -129,29 +131,10 @@ class TripTemplate(models.Model):
         return filepath
 
     def make_filespace(self):
-        if not os.path.isdir(self.find_filespace()):
-            os.mkdir(self.find_filespace())
+        if not os.path.isdir(self.filespace()):
+            os.mkdir(self.filespace())
             return True
         return False
-
-        
-    def computeGPX(self):
-        """Return a GPX object from all routes and POIs in this trip."""
-
-        gpx = ''
-        return gpx
-
-    def topo250maps(self):
-        """Return a list of the Topo250 maps touched by this trip."""
-
-        maps = []
-        return maps
-
-    def topo50maps(self):
-        """Return a list of the Topo50 maps touched by this trip."""
-
-        maps = []
-        return maps
 
 
 class Template(TripTemplate):
@@ -162,35 +145,38 @@ class Template(TripTemplate):
 class TemplateNote(models.Model):
     """Simple text notes attached to a template record."""
 
-    trip = models.ForeignKey(Template)
+    template = models.ForeignKey(Template)
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=255, blank=True, null=True)
-    content = models.TextField(blank=True, null=True)    
-    
-    
+    content = models.TextField(blank=True, null=True)
+
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+
+
 class Trip(TripTemplate):
     """A trip is a plan for and record of an actual expedition."""
 
     templates = models.ManyToManyField(Template)
-    
+
     start_date_planned = models.DateField(blank=True, null=True)
     end_date_planned = models.DateField(blank=True, null=True)
 
     start_date_actual = models.DateField(blank=True, null=True)
     end_date_actual = models.DateField(blank=True, null=True)
 
-    
+
 class TripNote(models.Model):
     """Simple text notes attached to a trip record."""
 
-    trips = models.ForeignKey(Trip, related_name='notes')
+    trip = models.ForeignKey(Trip, related_name='notes')
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=255, blank=True, null=True)
-    content = models.TextField(blank=True, null=True)    
-    
-    
+    content = models.TextField(blank=True, null=True)
+
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+
 class PointsOfInterest(models.Model):
     """Outgoing points.
 
@@ -230,26 +216,12 @@ class PointsOfInterest(models.Model):
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=255, blank=True, null=True)
-    
+    provenance = models.CharField(max_length=255, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+
     geom = models.PointField(srid=SRID['WGS84'])
 
-    def nztm(self):
-        """Return a geometry representing this point in NZTM 2000.
-        """
 
-    def topo250map(self):
-        """Return the name of the Topo250 map this point falls on.
-        """
-
-        topo250 = None
-        return topo250
-
-    def topo50map(self):
-        """Return the name of the Topo50 map this point falls on.
-        """
-
-        topo50 = None
-        return topo50
 
 
 class Route(models.Model):
@@ -258,7 +230,7 @@ class Route(models.Model):
     These may be shared amongst trips and trip templates."""
 
     trips = models.ManyToManyField(Trip)
-    template = models.ManyToManyField(Template)
+    templates = models.ManyToManyField(Template)
 
     comment = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -275,6 +247,8 @@ class Route(models.Model):
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=255, blank=True, null=True)
+    provenance = models.CharField(max_length=255, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
 
     geom = models.LineStringField(srid=SRID['WGS84'])
 
@@ -314,6 +288,9 @@ class RoutePoint(models.Model):
 
     ordinal = models.IntegerField(default=0)
     status = models.CharField(max_length=255, blank=True, null=True)
+    provenance = models.CharField(max_length=255, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+
     geom = models.PointField(srid=SRID['WGS84'])
 
 
@@ -342,6 +319,8 @@ class Track(models.Model):
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=255, blank=True, null=True)
+    provenance = models.CharField(max_length=255, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
 
     geom = models.MultiLineStringField(srid=SRID['WGS84'], blank=True, null=True)
 
@@ -353,7 +332,7 @@ class TrackSegment(models.Model):
     status = models.CharField(max_length=255, blank=True, null=True)
     geom = models.LineStringField(srid=SRID['WGS84'], blank=True, null=True)
 
-    
+
 class TrackPoint(models.Model):
     """Incoming points associated with a track."""
 
@@ -387,9 +366,12 @@ class TrackPoint(models.Model):
 
     ordinal = models.IntegerField(default=0)
     status = models.CharField(max_length=255, blank=True, null=True)
+    provenance = models.CharField(max_length=255, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+
     geom = models.PointField(srid=SRID['WGS84'])
 
-    
+
 class TripReport(models.Model):
     """A trip report records written and photographic reports of a trip.
     """
@@ -402,7 +384,7 @@ class TripReport(models.Model):
     )
 
     trip = models.ForeignKey(Trip)
-    
+
     status = models.CharField(
         max_length=64, choices=STATUS, default='Unclassified')
 
@@ -416,7 +398,7 @@ class Waypoint(models.Model):
 
     A waypoint may belong to only one trip record."""
 
-    trips = models.ForeignKey(Trip)
+    trip = models.ForeignKey(Trip)
 
     age_of_dgps_data = models.TextField(blank=True, null=True)
     comment = models.TextField(blank=True, null=True)
@@ -445,33 +427,20 @@ class Waypoint(models.Model):
     owner = models.CharField(max_length=255, blank=True, null=True)
     group = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=255, blank=True, null=True)
+    provenance = models.CharField(max_length=255, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
 
     geom = models.PointField(srid=SRID['WGS84'])
 
-    def nztm(self):
-        """Return a geometry representing thsi point in NZTM 2000.
-        """
-
-    def topo250map(self):
-        """Return the name of the Topo250 map this point falls on.
-        """
-
-        topo250 = None
-        return topo250
-
-    def topo50map(self):
-        """Return the name of the Topo250 map this point falls on.
-        """
-
-        topo50 = None
-        return topo50
+    def __unicode__(self):
+        return self.name
 
 class GPXFile():
     """Class to pocess a gpx file from upload or other place.
 
     Consumes an element from request.FILES, or an opened file.
 
-    Will insert records into the database. 
+    Will insert records into the database.
     """
 
     gpx = None # Parsed gpxpy object
@@ -481,70 +450,203 @@ class GPXFile():
     def __init__(self, gpxfile, trip):
         """Parse the file with gpxpy.
 
-        A GPX file must be associated with an existing trip record.
+        Instantiate with a file, from request.FILES, or the result of
+        a file open operation.
+
+        Data from a GPX file must be associated with an existing trip
+        record.
         """
 
         self.gpxfile = gpxfile
         self.trip = trip
         self.gpx = gpxpy.parse(gpxfile)
 
-        self.warnings.append("Processing gpxfile...")
+    def __get_absolute_url__(self):
 
-        self.warnings.extend(self.process_waypoints(self.gpx))
+        (path, fname) = os.path.split(self.gpxfile.name)
+        return os.path.join(self.trip.url, 'file', fname)
 
+    url = property(__get_absolute_url__)
 
-    def process_waypoints(self, gpx):
-        """Extract waypoint data from GPX file, insert records into db.
+    def analyse(self):
+        """Return a dictionary containing lists of points, lines etc.
+
+        Indicate whether a record exists in the db matching this one.
         """
 
-        warnings = [str(len(gpx.waypoints)) + ' waypoints']
-        
-        for waypoint in gpx.waypoints:
+        (path, name) = os.path.split(self.gpxfile.name)
 
-            print "mag var", type(waypoint.magnetic_variation)
+        result = {
+            "name": name,
+            "url": self.url,
+            "routes": self.analyse_routes(),
+            "tracks": self.analyse_tracks(),
+            "waypoints": self.analyse_waypoints(),
+        }
+
+        return result
+
+    def analyse_routes(self):
+        """List basic data about each route."""
+
+        result = []
+        return result
+
+    def analyse_tracks(self):
+        """List basic data about each track."""
+
+        result = []
+
+        for track in self.gpx.tracks:
+            track = {
+                "name": track.name
+            }
+            result.append(track)
+
+        return result
+
+    def analyse_waypoints(self):
+        """List basic data about each waypoint."""
+
+        result = []
+
+        for waypoint in self.gpx.waypoints:
+            point = {
+                "name": waypoint.name,
+                "comment": waypoint.comment,
+                "latitude": waypoint.latitude,
+                "longitude": waypoint.longitude,
+            }
+
+            result.append(point)
+
+        return result
+
+
+    def inject(self):
+        """Sequencer for the injection operation. Calls waypoints etc."""
+
+        warnings = []
+        warnings.extend(self.inject_tracks(self.gpx, self.trip))
+        warnings.extend(self.inject_waypoints(self.gpx, self.trip))
+
+        return warnings
+
+    def inject_routes(self, gpx, trip):
+
+        warnings = []
+
+        return warnings
+
+    def inject_tracks(self, gpx, trip):
+
+        warnings = []
+     
+        (path, provenance) = os.path.split(self.gpxfile.name)
+
+        for track in gpx.tracks:
+
+            existing = Track.objects.filter(
+                name=track.name, number=track.number
+            )
+            if existing.count() > 0:
+                
+                data = {
+                    'trip': trip,
+                    'comment': track.comment,
+                    'description': track.description,
+                    'extensions': track.extensions,
+                    'gtype': track.type,
+                    'link': track.link,
+                    'link_text': track.link_text,
+                    'link_type': track.link_type,
+                    'name': track.name,
+                    'number': track.number,
+                    'source': track.source,
+
+                    'owner': None,
+                    'group': None,
+                    'status': None,
+                    'provenance': provenance,
+                }
+
+                for item in sorted(data.keys()):
+                    print item, data[item]
+
+                #track = Track(**data)
+
+                for segment in track.segments:
+                    print segment
+
+
+
+        
+        return warnings
+
+    def inject_waypoints(self, gpx, trip):
+        """Extract waypoint data from gpxpy object, insert records into db.
+        """
+
+        warnings = ['Injecting ' + str(len(gpx.waypoints)) + ' waypoints.']
+
+        for waypoint in gpx.waypoints:
 
             existing = Waypoint.objects.filter(
                 time=waypoint.time, latitude=waypoint.latitude,
                 longitude=waypoint.longitude,
             )
+            if existing.count() > 0:
+                warnings.append(waypoint.name + " found in db.")
 
-            data = {
-                'trip': self.trip_id,
-                'age_of_dgps_data': waypoint.age_of_dgps_data,
-                'comment': waypoint.comment,
-                'description': waypoint.description,
-                'dgps_id': waypoint.dgps_id,
-                'elevation': waypoint.elevation,
-                'extensions': waypoint.extensions,
-                'geoid_height': waypoint.geoid_height,
-                'horizontal_dilution': waypoint.horizontal_dilution,
-                'latitude': waypoint.latitude,
-                'link': waypoint.link,
-                'link_text': waypoint.link_text,
-                'link_type': waypoint.link_type,
-                'longitude': waypoint.longitude,
-                'magnetic_variation': waypoint.magnetic_variation,
-                'name': waypoint.name,
-                'position_dilution': waypoint.position_dilution,
-                'satellites': waypoint.satellites,
-                'source': waypoint.source,
-                'symbol': waypoint.symbol,
-                'time': waypoint.time,
-                'gtype': waypoint.type,
-                'type_of_gpx_fix': waypoint.type_of_gpx_fix,
-                'vertical_dilution': waypoint.vertical_dilution,
-            }
-            
-            p = Waypoint(**data)
+            else:
+                
+                (path, provenance) = os.path.split(self.gpxfile.name)
 
-            
-            warnings.append(
-                " ".join(
-                    (waypoint.name,
-                    str(waypoint.latitude),
-                     str(waypoint.longitude),
+                data = {
+                    'trip': trip,
+                    'age_of_dgps_data': waypoint.age_of_dgps_data,
+                    'comment': waypoint.comment,
+                    'description': waypoint.description,
+                    'dgps_id': waypoint.dgps_id,
+                    'elevation': waypoint.elevation,
+                    'extensions': waypoint.extensions,
+                    'geoid_height': waypoint.geoid_height,
+                    'horizontal_dilution': waypoint.horizontal_dilution,
+                    'latitude': waypoint.latitude,
+                    'link': waypoint.link,
+                    'link_text': waypoint.link_text,
+                    'link_type': waypoint.link_type,
+                    'longitude': waypoint.longitude,
+                    'magnetic_variation': waypoint.magnetic_variation,
+                    'name': waypoint.name,
+                    'position_dilution': waypoint.position_dilution,
+                    'satellites': waypoint.satellites,
+                    'source': waypoint.source,
+                    'symbol': waypoint.symbol,
+                    'time': make_aware(waypoint.time),
+                    'gtype': waypoint.type,
+                    'type_of_gpx_fix': waypoint.type_of_gpx_fix,
+                    'vertical_dilution': waypoint.vertical_dilution,
+
+                    'owner': None,
+                    'group': None,
+                    'status': None,
+                    'provenance': provenance,
+                    'geom': Point(
+                        waypoint.latitude, waypoint.longitude, srid=4326),
+                    
+                }
+
+                p = Waypoint(**data)
+                p.save()
+                
+                warnings.append(
+                    " ".join(
+                        (waypoint.name,
+                        str(waypoint.latitude),
+                         str(waypoint.longitude),
+                        )
                     )
                 )
-            )
 
         return warnings

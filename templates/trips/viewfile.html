@@ -1,0 +1,65 @@
+{% extends 'framework.html' %}{% block main %}{% load staticfiles %}
+<h1>{{ h1 }}</h1>
+
+<p>Filename: {{ filename }} </p>
+
+
+{% if filetype == 'gpx' %}
+
+<p>GPX file</p>
+
+{% if gpxfile.routes %}
+<h3>Routes</h3>
+
+<table>
+
+    <tr>
+        <th>name</th>
+    </tr>
+{% for route in gpxfile.routes %}
+    <tr>
+        <td>{{ route.name }}</td>
+    </tr>
+{% endfor %}
+</table>
+{% endif %}
+{% if gpxfile.tracks %}
+<h3>Tracks</h3>
+
+<table>
+
+    <tr>
+        <th>name</th>
+    </tr>
+{% for track in gpxfile.tracks %}
+    <tr>
+        <td>{{ track.name }}</td>
+    </tr>
+{% endfor %}
+</table>
+{% endif %}
+{% if gpxfile.waypoints %}
+<h3>Waypoints</h3>
+
+<table>
+
+    <tr>
+        <th>name</th>
+        <th>lat long</th>
+        <th>ele</th>
+
+    </tr>
+{% for point in gpxfile.waypoints %}
+    <tr>
+        <td>{{ point.name }}</td>
+        <td>{{ point.latitude }} {{ point.longitude }}</td>
+        <td>{{ point.elevation }}</td>
+    </tr>
+{% endfor %}
+
+</table>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

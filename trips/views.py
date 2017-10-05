@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import os
+
 from django.shortcuts import render
 import trips.forms as forms
 import trips.models as models
@@ -13,27 +15,55 @@ def index(request):
         'h1': 'Trip and template records',
         'title': 'The title',
         'tripForm': forms.TripRecord(),
-        'uploadGPX': forms.UploadGPX(),
         'trips': models.Trip.objects.all(),
     }
 
-    trip = models.Trip.objects.get(id='b1ee6b0c-cb33-433d-b658-2ae1ea4a2d8f')
-
-    if request.POST:
-
-        s = models.GPXFile(request.FILES['gpx'], trip=trip)
-        for warning in s.warnings:
-            print warning
-
-                            
-        
     return render(request, template, context)
+
+
+def viewfile(request, identifier, filename):
+
+    template = 'trips/viewfile.html'
+    h1 = 'View a file'
+
+    trip = models.Trip.objects.get(id__startswith=identifier)
+    filepath = os.path.join(trip.filespace(), filename)
+    
+
+    if filename in trip.parse_filespace().model['gpx']:
+        h1 = 'Examine a gpx file'
+        filetype = 'gpx'
+
+        f = open(filepath)
+        gpxf = models.GPXFile(f, trip)
+
+    
+    # Inject one gpx file.
+    #filepath = os.path.join(trip.filespace(), '2017-09-30 02.17.41 Day.gpx')
+    #if os.path.isfile(filepath):
+    #    f = open(filepath)
+    #    injection = models.GPXFile(f, trip)
+    #    injection.inject()
+    
+
+    
+    context = {
+        'h1': h1,
+        'identifier': identifier,
+        'filename': filename,
+        'filetype': filetype,
+        'gpxfile': gpxf.analyse(),
+    }
+    
+    return render(request, template, context)
+
 
 def triptemplate(request, identifier):
 
     trip = None
     directory = None
     trips = models.Trip.objects.filter(id__contains=identifier)
+
     if trips.count() == 1:
         trip = trips[0]
         directory = trip.parse_filespace()
@@ -42,26 +72,36 @@ def triptemplate(request, identifier):
 
     if request.POST:
 
-        #s = models.GPXFile(request.FILES['gpx'], trip=trip)
-
         if request.FILES:
             trip.save(files=request.FILES)
 
         trip = models.Trip.objects.get(id=trip.id)
         directory = trip.parse_filespace()
-            
-        #for warning in s.warnings:
-        #    print warning
 
+    # Read and analyse any gpx files
+    gpxfiles = []
+    if directory:
+        for gpxfile in directory.model['gpx']:
+            filepath = os.path.join(trip.filespace(), gpxfile)
+            if os.path.isfile(filepath):
+                f = open(filepath)
+                gpxf = models.GPXFile(f, trip)
+                gpxfiles.append(gpxf.analyse())
 
+    if trip:
+        h1 = trip.name
+    else:
+        h1 = 'No trip record found'
+        
     context = {
-        'h1': "Trip or template",
+        'h1': h1,
         'identifier': identifier,
         'trip': trip,
         'trips': trips,
         'uploadFile': forms.UploadFile(),
         'forms': True,
         'directory': directory,
+        'gpxfiles': gpxfiles,
     }
     
     return render(request, template, context)

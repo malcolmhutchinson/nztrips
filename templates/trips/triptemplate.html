@@ -7,7 +7,7 @@
 <div class='triprecord'>
 <p>Trip identifier: {{ identifier }}</p>
 
-<h2>{{ trip.name }}</h2>
+<p>Waypoints: {{ trip.waypoints.count }}</p>
 
 <table>
 
@@ -41,8 +41,40 @@
       
 </table>
 
+<div id='gpxfiles'>
 
-<div class='attachments'>
+    <h3>GPX files</h3>
+
+    <table>
+
+        <tr>
+
+            <th>name</th>
+            <th>routes</th>
+            <th>tracks</th>
+            <th>waypoints</th>
+
+        </tr>
+{% for file in gpxfiles %}
+        <tr>
+
+            <td><a href='{{ file.url }}'>{{ file.name }}</a></td>
+            <td>{{ file.routes|length }}</td>
+            <td>{{ file.tracks|length }}</td>
+            <td>{{ file.waypoints|length }}</td>
+
+        </tr>
+{% endfor %}
+        
+          
+
+    </table>
+
+      
+
+</div>
+
+<div id='attachments'>
 
   <h3>Files associated with this trip</h3>
 
@@ -52,9 +84,9 @@
 </div>
 
 </div>
+
+
 {% elif trips.count == 0 %}
-
-
 
 <h3>We can't seem to find this trip record</h3>
 
