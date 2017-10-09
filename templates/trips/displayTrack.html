@@ -1,0 +1,57 @@
+<!-- trips/displayTrack.html -->
+
+<h3>Trip record</h3>
+
+<table class='data'>
+
+    <tr>
+
+        <th>field</th>
+        <th>value</th>
+
+    </tr>
+    <tr>
+        <th>name</th>
+        <td>{{ track.name }}</td>
+    </tr>
+    <tr>
+        <th>comment</th>
+        <td>{{ track.comment }}</td>
+    </tr>
+    <tr>
+        <th>description</th>
+        <td>{{ track.description }}</td>
+    </tr>
+    <tr>
+        <th>extensions</th>
+        <td>{{ trackextensions }}</td>
+    </tr>
+    <tr>
+        <th>link</th>
+        <td>{{ track.link }}</td>
+    </tr>
+    <tr>
+        <th>link_text</th>
+        <td>{{ track.link_text }}</td>
+    </tr>
+    <tr>
+        <th>link_type</th>
+        <td>{{ track.link_type }}</td>
+    </tr>
+    <tr>
+        <th>number</th>
+        <td>{{ track.number }}</td>
+    </tr>
+</table>
+
+<h3>Segments and points</h2>
+
+<table class='data'>
+
+{% for segment in track.tracksegment_set.all %}
+
+
+
+{% endfor %}
+</table>  
+<!-- end trips/displayTrack.html -->

@@ -33,13 +33,61 @@
 
     </tr>
 
+</table>
+
     <p>Upload a gpx file</p>
 
     {{ uploadFile.as_p }}
 
     <input type='submit' name='upload' value='upload' />
-      
-</table>
+
+<div class='spatial'>
+
+    <h3>Spatial data associated with this trip</h3>
+
+    <table>
+
+        <tr>
+            <th colspan='4'>Tracks</th>
+        </tr>
+
+        <tr>
+            <th colspan='2'>Name</th>
+            <th>Segments</th>
+            <th>Points</th>
+        </tr>
+{% for track in trip.track_set.all %}
+        <tr>
+            <td colspan='2'><a href='{{ track.url }}'>{{ track.name }}</a></td>
+            <td>{{ track.segcount }}</td>
+            <td>{{ track.pointcount }}</td>
+        </tr>
+{% endfor %}
+
+        <tr>
+            <th colspan='4'>Waypoints</th>
+        </tr>
+        <tr>
+            <th>Name</th>
+            <th>lat/long</th>
+            <th>ele</th>
+            <th>time</th>
+        </tr>
+{% for waypoint in trip.waypoint_set.all %}
+        <tr>
+            <td><a href='{{ waypoint.url }}'>{{ waypoint.name }}<a/></td>
+            <td>{{ waypoint.latitude }} {{ waypoint.longitude }}</td>
+            <td>{{ waypoint.elevation }}</td>
+            <td>{{ waypoint.time }}</td>
+        </tr>
+{% endfor %}
+
+
+     </table>
+
+
+        
+</div>
 
 <div id='gpxfiles'>
 

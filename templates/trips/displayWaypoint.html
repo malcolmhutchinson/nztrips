@@ -1,0 +1,113 @@
+<!-- trips/displayWaypoint.html -->
+
+<h3>Waypoint record</h3>
+
+
+
+<table class='data'>
+
+    <tr>
+
+        <th>field</th>
+        <th>value</th>
+
+    </tr>
+    <tr>
+        <th>name</th>
+        <td>{{ waypoint.name }}</td>
+    </tr>
+    <tr>
+        <th>time</th>
+        <td>{{ waypoint.time }}</td>
+    </tr>
+    <tr>
+        <th>lat long</th>
+        <td>{{ waypoint.latitude }} {{ waypoint.longitude }}</td>
+    </tr>
+    <tr>
+        <th>elevation</th>
+        <td>{{ waypoint.elevation }}</td>
+    </tr>
+    <tr>
+        <th>comment</th>
+        <td>{{ waypoint.comment }}</td>
+    </tr>
+    <tr>
+        <th>description</th>
+        <td>{{ waypoint.description }}</td>
+    </tr>
+    <tr>
+        <th>symbol</th>
+        <td>{{ waypoint.symbol }}</td>
+    </tr>
+    <tr>
+        <th>type</th>
+        <td>{{ waypoint.gtype }}</td>
+    </tr>
+    <tr>
+        <td colspan='2' style="border-bottom: 1px black solid"></td>
+    </tr>
+
+    <tr>
+        <th>dgps_id</th>
+        <td>{{ waypoint.dgps_id }}</td>
+    </tr>
+    <tr>
+        <th>extensions</th>
+        <td>{{ waypoint }}</td>
+    </tr>
+    <tr>
+        <th>geoid height</th>
+        <td>{{ waypoint.geoid_height }}</td>
+    </tr>
+    <tr>
+        <th>hz.dil.</th>
+        <td>{{ waypoint.horizontal_dilution }}</td>
+    </tr>
+    <tr>
+        <th>link</th>
+        <td>{{ waypoint.link }}</td>
+    </tr>
+    <tr>
+        <th>link_text</th>
+        <td>{{ waypoint.link_text }}</td>
+    </tr>
+    <tr>
+        <th>link_type</th>
+        <td>{{ waypoint.link_type }}</td>
+    </tr>
+    <tr>
+        <th>mag.var.</th>
+        <td>{{ waypoint.magnetic_variation }}</td>
+    </tr>
+    <tr>
+        <th>pos.dil.</th>
+        <td>{{ waypoint.position_dilution }}</td>
+    </tr>
+    <tr>
+        <th>satellites</th>
+        <td>{{ waypoint.satellites }}</td>
+    </tr>
+    <tr>
+        <th>source</th>
+        <td>{{ waypoint.source }}</td>
+    </tr>
+    <tr>
+        <th>type of gpx fix</th>
+        <td>{{ waypoint.tyep_of_gpx_fix }}</td>
+    </tr>
+    <tr>
+        <th>v.dil.</th>
+        <td>{{ waypoint.vertical_dilution }}</td>
+    </tr>
+    <tr>
+        <th>age of dgps data</th>
+        <td>{{ waypoint.age_of_dgps_data }}</td>
+    </tr>
+
+
+
+
+      
+</table>
+<!-- end trips/displayWaypoint.html -->

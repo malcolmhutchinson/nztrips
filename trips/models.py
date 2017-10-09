@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-#from django.db import models
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Point, LineString, MultiLineString
 from django.utils.timezone import make_aware
@@ -15,6 +14,7 @@ import webnote
 import trips.settings as settings
 
 SRID = {
+    'NZMG': 27200,
     'NZTM': 2193,
     'WGS84': 4326,
 }
@@ -110,11 +110,10 @@ class TripTemplate(models.Model):
 
         super(TripTemplate, self).save(*args, **kwargs)
 
-
     def identifier(self):
         """The first eight characters of the uuid, chopped by hyphen."""
 
-        uri_steps =  str(self.id).split('-')
+        uri_steps = str(self.id).split('-')
         return uri_steps[0]
 
     def filespace(self):
@@ -177,6 +176,7 @@ class TripNote(models.Model):
 
     created = models.DateTimeField(auto_now_add=True, editable=False)
 
+
 class PointsOfInterest(models.Model):
     """Outgoing points.
 
@@ -221,7 +221,8 @@ class PointsOfInterest(models.Model):
 
     geom = models.PointField(srid=SRID['WGS84'])
 
-
+    def __unicode__(self):
+        return self.name
 
 
 class Route(models.Model):
@@ -252,9 +253,11 @@ class Route(models.Model):
 
     geom = models.LineStringField(srid=SRID['WGS84'])
 
+    def __unicode__(self):
+        return self.name
+
     def computeGPX(self):
         """Return a GPX object (string) from this route."""
-
 
 
 class RoutePoint(models.Model):
@@ -293,6 +296,8 @@ class RoutePoint(models.Model):
 
     geom = models.PointField(srid=SRID['WGS84'])
 
+    def __unicode__(self):
+        return self.name
 
 
 class Track(models.Model):
@@ -302,6 +307,8 @@ class Track(models.Model):
     taken from the GDAL file translator.
 
     """
+
+    URL = 'track/'
 
     trip = models.ForeignKey(Trip)
 
@@ -322,7 +329,27 @@ class Track(models.Model):
     provenance = models.CharField(max_length=255, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, editable=False)
 
-    geom = models.MultiLineStringField(srid=SRID['WGS84'], blank=True, null=True)
+    geom = models.MultiLineStringField(
+        srid=SRID['WGS84'], blank=True, null=True
+    )
+
+    def __unicode__(self):
+        return self.name
+
+    def __get_absolute_url__(self):
+        return os.path.join(settings.BASE_URL, self.URL + str(self.id))
+
+    url = property(__get_absolute_url__)
+
+    def segcount(self):
+        return TrackSegment.objects.filter(track=self).count()
+
+    def pointcount(self):
+        pointcount = 0
+        for seg in self.tracksegment_set.all():
+            pointcount += seg.pointcount()
+
+        return pointcount
 
 
 class TrackSegment(models.Model):
@@ -331,6 +358,12 @@ class TrackSegment(models.Model):
 
     status = models.CharField(max_length=255, blank=True, null=True)
     geom = models.LineStringField(srid=SRID['WGS84'], blank=True, null=True)
+
+    def __unicode__(self):
+        return str(self.track) + " | seg " + str(self.id)
+
+    def pointcount(self):
+        return TrackPoint.objects.filter(segment=self).count()
 
 
 class TrackPoint(models.Model):
@@ -371,6 +404,12 @@ class TrackPoint(models.Model):
 
     geom = models.PointField(srid=SRID['WGS84'])
 
+    def __unicode__(self):
+        if self.name:
+            return self.name
+
+        return str(self.segment) + " | point " + str(self.ordinal)
+
 
 class TripReport(models.Model):
     """A trip report records written and photographic reports of a trip.
@@ -389,7 +428,7 @@ class TripReport(models.Model):
         max_length=64, choices=STATUS, default='Unclassified')
 
     date_pub = models.DateTimeField()
-    author = models.CharField(max_length=255, blank=True,null=True)
+    author = models.CharField(max_length=255, blank=True, null=True)
     report_text = models.TextField(blank=True, null=True)
 
 
@@ -399,6 +438,8 @@ class Waypoint(models.Model):
     A waypoint may belong to only one trip record."""
 
     trip = models.ForeignKey(Trip)
+
+    URL = 'waypoint/'
 
     age_of_dgps_data = models.TextField(blank=True, null=True)
     comment = models.TextField(blank=True, null=True)
@@ -435,6 +476,12 @@ class Waypoint(models.Model):
     def __unicode__(self):
         return self.name
 
+    def __get_absolute_url__(self):
+        return os.path.join(settings.BASE_URL, self.URL, str(self.id))
+
+    url = property(__get_absolute_url__)
+    
+        
 class GPXFile():
     """Class to pocess a gpx file from upload or other place.
 
@@ -443,9 +490,9 @@ class GPXFile():
     Will insert records into the database.
     """
 
-    gpx = None # Parsed gpxpy object
-    trip = None # A Trip object.
-    warnings = [] # List of strings.
+    gpx = None  # Parsed gpxpy object
+    trip = None  # A Trip object.
+    warnings = []  # List of strings.
 
     def __init__(self, gpxfile, trip):
         """Parse the file with gpxpy.
@@ -498,10 +545,17 @@ class GPXFile():
         result = []
 
         for track in self.gpx.tracks:
-            track = {
-                "name": track.name
+            points = 0
+            for segment in track.segments:
+                points += len(segment.points)
+
+            trackrec = {
+                "name": track.name,
+                "segments": len(track.segments),
+                "points": points,
             }
-            result.append(track)
+
+            result.append(trackrec)
 
         return result
 
@@ -516,17 +570,20 @@ class GPXFile():
                 "comment": waypoint.comment,
                 "latitude": waypoint.latitude,
                 "longitude": waypoint.longitude,
+                "elevation": waypoint.elevation,
+                "time": waypoint.time,
             }
 
             result.append(point)
 
         return result
 
-
     def inject(self):
         """Sequencer for the injection operation. Calls waypoints etc."""
 
         warnings = []
+
+        warnings.extend(self.inject_routes(self.gpx, self.trip))
         warnings.extend(self.inject_tracks(self.gpx, self.trip))
         warnings.extend(self.inject_waypoints(self.gpx, self.trip))
 
@@ -539,112 +596,120 @@ class GPXFile():
         return warnings
 
     def inject_tracks(self, gpx, trip):
+        """Insert records into db for tracks, segments and points.
+
+        Given a parsed gpxpy object, and a Trip object, iterate
+        through tracks in the gpx object, extracting segments and
+        points, and create database records for each.
+
+        """
 
         warnings = []
-     
+
         (path, provenance) = os.path.split(self.gpxfile.name)
 
         for track in gpx.tracks:
 
-            existing = Track.objects.filter(
-                name=track.name, number=track.number
-            )
-            if existing.count() > 0:
-                
-                data = {
-                    'trip': trip,
-                    'comment': track.comment,
-                    'description': track.description,
-                    'extensions': track.extensions,
-                    'gtype': track.type,
-                    'link': track.link,
-                    'link_text': track.link_text,
-                    'link_type': track.link_type,
-                    'name': track.name,
-                    'number': track.number,
-                    'source': track.source,
+            try:
+                existing = Track.objects.get(
+                    name=track.name, number=track.number)
+                warnings.append(
+                    "Track record already exists for <tt>" + track.name +
+                    "</tt>."
+                )
 
-                    'owner': None,
-                    'group': None,
-                    'status': None,
-                    'provenance': provenance,
-                }
+            except Track.DoesNotExist:
 
-                for item in sorted(data.keys()):
-                    print item, data[item]
+                trackdata = {"trip": trip, }
+                for attr in track.__dict__:
+                    if attr in Track.__dict__:
+                        trackdata[attr] = getattr(track, attr)
 
-                #track = Track(**data)
+                trackrc = Track(**trackdata)
+                trackrc.save()
 
+                pointcount = 0
                 for segment in track.segments:
-                    print segment
+                    segdata = {"track": trackrc, }
+                    for attr in segment.__dict__:
+                        if attr in TrackSegment.__dict__:
+                            segdata[attr] = getattr(segment, attr)
 
+                    segrc = TrackSegment(**segdata)
+                    segrc.save()
 
+                    ordinal = 0
+                    for point in segment.points:
 
-        
+                        pointdata = {"segment": segrc, }
+
+                        for attr in point.__dict__:
+                            if attr in TrackPoint.__dict__:
+                                pointdata[attr] = getattr(point, attr)
+
+                        pointdata['geom'] = Point(
+                            point.latitude, point.longitude, srid=SRID['WGS84']
+                        )
+                        pointdata['ordinal'] = ordinal
+                        ordinal += 1
+                        pointcount += 1
+
+                        pointrc = TrackPoint(**pointdata)
+                        pointrc.save()
+
+                warning = "Created track record for <tt>" + track.name
+                warning += "</tt> with " + str(len(track.segments))
+                warning += " segments, and " + str(pointcount) + " points."
+
+                warnings.append(warning)
+
         return warnings
 
     def inject_waypoints(self, gpx, trip):
         """Extract waypoint data from gpxpy object, insert records into db.
         """
 
-        warnings = ['Injecting ' + str(len(gpx.waypoints)) + ' waypoints.']
+        warnings = []
 
         for waypoint in gpx.waypoints:
 
-            existing = Waypoint.objects.filter(
-                time=waypoint.time, latitude=waypoint.latitude,
-                longitude=waypoint.longitude,
-            )
-            if existing.count() > 0:
-                warnings.append(waypoint.name + " found in db.")
+            try:
+                existing = Waypoint.objects.get(
+                    time=waypoint.time, latitude=waypoint.latitude,
+                    longitude=waypoint.longitude,
+                )
+                warnings.append(
+                    "Waypoint record already exists for <tt>" + waypoint.name +
+                    "</tt>."
+                )
+            except Waypoint.DoesNotExist:
 
-            else:
-                
                 (path, provenance) = os.path.split(self.gpxfile.name)
 
                 data = {
                     'trip': trip,
-                    'age_of_dgps_data': waypoint.age_of_dgps_data,
-                    'comment': waypoint.comment,
-                    'description': waypoint.description,
-                    'dgps_id': waypoint.dgps_id,
-                    'elevation': waypoint.elevation,
-                    'extensions': waypoint.extensions,
-                    'geoid_height': waypoint.geoid_height,
-                    'horizontal_dilution': waypoint.horizontal_dilution,
-                    'latitude': waypoint.latitude,
-                    'link': waypoint.link,
-                    'link_text': waypoint.link_text,
-                    'link_type': waypoint.link_type,
-                    'longitude': waypoint.longitude,
-                    'magnetic_variation': waypoint.magnetic_variation,
-                    'name': waypoint.name,
-                    'position_dilution': waypoint.position_dilution,
-                    'satellites': waypoint.satellites,
-                    'source': waypoint.source,
-                    'symbol': waypoint.symbol,
-                    'time': make_aware(waypoint.time),
-                    'gtype': waypoint.type,
-                    'type_of_gpx_fix': waypoint.type_of_gpx_fix,
-                    'vertical_dilution': waypoint.vertical_dilution,
-
                     'owner': None,
                     'group': None,
                     'status': None,
                     'provenance': provenance,
                     'geom': Point(
                         waypoint.latitude, waypoint.longitude, srid=4326),
-                    
+
                 }
+
+                for attr in waypoint.__dict__:
+                    if attr in Waypoint.__dict__:
+                        data[attr] = getattr(waypoint, attr)
 
                 p = Waypoint(**data)
                 p.save()
-                
+
                 warnings.append(
-                    " ".join(
-                        (waypoint.name,
-                        str(waypoint.latitude),
-                         str(waypoint.longitude),
+                    "creating " + " ".join(
+                        (
+                            waypoint.name,
+                            str(waypoint.latitude),
+                            str(waypoint.longitude),
                         )
                     )
                 )

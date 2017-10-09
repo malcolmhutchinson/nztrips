@@ -7,7 +7,7 @@ from django.shortcuts import render
 import trips.forms as forms
 import trips.models as models
 
-# Create your views here.
+
 def index(request):
 
     template = 'trips/index.html'
@@ -21,14 +21,38 @@ def index(request):
     return render(request, template, context)
 
 
+def viewdata(request, command, identifier):
+    template = 'trips/data.html'
+    route = None
+    track = None
+    waypoint = None
+
+    if command == 'route':
+        pass
+    elif command == 'track':
+        track = models.Track.objects.get(id=identifier)
+    elif command == 'waypoint':
+        waypoint = models.Waypoint.objects.get(id=identifier)
+        pass
+    
+    context = {
+        'h1': "View a data record",
+        'command': command,
+        'identifier': identifier,
+        'route': route,
+        'track': track,
+        'waypoint': waypoint,
+    }
+    return render(request, template, context)
+
 def viewfile(request, identifier, filename):
 
     template = 'trips/viewfile.html'
     h1 = 'View a file'
+    warnings = []
 
     trip = models.Trip.objects.get(id__startswith=identifier)
     filepath = os.path.join(trip.filespace(), filename)
-    
 
     if filename in trip.parse_filespace().model['gpx']:
         h1 = 'Examine a gpx file'
@@ -37,24 +61,22 @@ def viewfile(request, identifier, filename):
         f = open(filepath)
         gpxf = models.GPXFile(f, trip)
 
-    
-    # Inject one gpx file.
-    #filepath = os.path.join(trip.filespace(), '2017-09-30 02.17.41 Day.gpx')
-    #if os.path.isfile(filepath):
-    #    f = open(filepath)
-    #    injection = models.GPXFile(f, trip)
-    #    injection.inject()
-    
+    if request.GET:
+        if ('command' in request.GET.keys() and
+                request.GET['command'] == 'inject'):
+            warnings.extend(gpxf.inject())
 
-    
     context = {
         'h1': h1,
         'identifier': identifier,
         'filename': filename,
         'filetype': filetype,
+        'trip': trip,
+        'gpxf': gpxf,
         'gpxfile': gpxf.analyse(),
+        'warnings': warnings,
     }
-    
+
     return render(request, template, context)
 
 
@@ -67,7 +89,7 @@ def triptemplate(request, identifier):
     if trips.count() == 1:
         trip = trips[0]
         directory = trip.parse_filespace()
-        
+
     template = 'trips/triptemplate.html'
 
     if request.POST:
@@ -92,7 +114,7 @@ def triptemplate(request, identifier):
         h1 = trip.name
     else:
         h1 = 'No trip record found'
-        
+
     context = {
         'h1': h1,
         'identifier': identifier,
@@ -103,8 +125,5 @@ def triptemplate(request, identifier):
         'directory': directory,
         'gpxfiles': gpxfiles,
     }
-    
+
     return render(request, template, context)
-
-
-    

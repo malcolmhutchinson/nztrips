@@ -1,0 +1,24 @@
+{% extends 'framework.html' %}{% block main %}{% load staticfiles %}
+<h1>{{ h1 }}</h1>
+
+
+{% if command == 'route' %}
+{% include 'trips/displayRoute.html' %}
+
+{% elif command == 'track' %}
+{% include 'trips/displayTrack.html' %}
+
+{% elif command == 'waypoint' %}
+{% include 'trips/displayWaypoint.html' %}
+
+{% else %}
+
+<p>Command not understood: {{ command }}</p>
+
+{% endif %}
+
+
+
+
+
+{% endblock %}

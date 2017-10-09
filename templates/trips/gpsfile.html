@@ -1,0 +1,85 @@
+<!-- trips/gpsfile.html -->
+<div class='gpxdata'>
+
+<p><a href='?command=inject'>Inject</a> data from this file into the
+trip record <a href='{{ trip.url }}'>{{ trip.name }}</a>.</p>
+
+
+<ol class='warnings'>
+{% for warning in warnings %}
+
+    <li>{{ warning|safe }}</li>
+{% endfor %}
+
+</ol>
+
+
+{% if gpxfile.routes %}
+<h3>Routes</h3>
+
+<table>
+
+    <tr>
+        <th>name</th>
+    </tr>
+{% for route in gpxfile.routes %}
+    <tr>
+        <td>{{ route.name }}</td>
+    </tr>
+{% endfor %}
+</table>
+{% endif %}
+
+
+
+
+{% if gpxfile.tracks %}
+<h3>Tracks</h3>
+
+<table>
+
+    <tr>
+        <th>name</th>
+        <th>No. segments</th>
+        <th>No. points</th>
+    </tr>
+{% for track in gpxfile.tracks %}
+    <tr>
+        <td>{{ track.name }}</td>
+        <td>{{ track.segments }}</td>
+        <td>{{ track.points }}</td>
+    </tr>
+
+{% endfor %}
+</table>
+{% endif %}
+
+
+
+
+
+{% if gpxfile.waypoints %}
+<h3>Waypoints</h3>
+
+<table>
+
+    <tr>
+        <th>name</th>
+        <th>lat long</th>
+        <th>ele (m)</th>
+        <th>time (UTC)</th>
+
+    </tr>
+{% for point in gpxfile.waypoints %}
+    <tr>
+        <td>{{ point.name }}</td>
+        <td>{{ point.latitude }} {{ point.longitude }}</td>
+        <td>{{ point.elevation|floatformat }}</td>
+        <td>{{ point.time|date:"Y-m-d H:i:s" }}</td>
+    </tr>
+{% endfor %}
+
+</table>
+</div>
+{% endif %}
+<!-- end trips/gpxfile.html -->
