@@ -81,7 +81,7 @@ class TripTemplate(models.Model):
     def waypoints(self):
         return Waypoint.objects.filter(trip=self)
 
-    def parse_filespace(self):
+    def directory(self):
         """Return a webnote.Directory object of the filespace."""
 
         filespace = self.filespace()
@@ -90,6 +90,19 @@ class TripTemplate(models.Model):
         directory = webnote.Directory(filespace)
 
         return directory
+
+    def gpxfiles(self):
+        """A list of parsed gpx file objects."""
+
+        gpxfiles = []
+        for gpxfile in self.directory().model['gpx']:
+            filepath = os.path.join(self.filespace(), gpxfile)
+            if os.path.isfile(filepath):
+                f = open(filepath)
+                gpxf = GPXFile(f, self)
+                gpxfiles.append(gpxf.analyse())
+
+        return gpxfiles
 
     def save(self, files=None, *args, **kwargs):
         """Save any uploaded file to filespace."""
@@ -341,9 +354,6 @@ class Track(models.Model):
 
     url = property(__get_absolute_url__)
 
-    def segcount(self):
-        return TrackSegment.objects.filter(track=self).count()
-
     def pointcount(self):
         pointcount = 0
         for seg in self.tracksegment_set.all():
@@ -351,12 +361,22 @@ class Track(models.Model):
 
         return pointcount
 
+    def segcount(self):
+        return TrackSegment.objects.filter(track=self).count()
+
+    def segments(self):
+        return TrackSegment.objects.filter(track=self)
+
 
 class TrackSegment(models.Model):
     track = models.ForeignKey(Track)
     extensions = models.TextField(blank=True, null=True)
 
     status = models.CharField(max_length=255, blank=True, null=True)
+    provenance = models.CharField(max_length=255, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    ordinal = models.IntegerField(default=0)
+
     geom = models.LineStringField(srid=SRID['WGS84'], blank=True, null=True)
 
     def __unicode__(self):
@@ -365,6 +385,8 @@ class TrackSegment(models.Model):
     def pointcount(self):
         return TrackPoint.objects.filter(segment=self).count()
 
+    def points(self):
+        return TrackPoint.objects.filter(segment=self)
 
 class TrackPoint(models.Model):
     """Incoming points associated with a track."""
@@ -404,6 +426,11 @@ class TrackPoint(models.Model):
 
     geom = models.PointField(srid=SRID['WGS84'])
 
+    class Meta():
+        ordering = ['segment', 'ordinal',]
+
+
+        
     def __unicode__(self):
         if self.name:
             return self.name
@@ -480,18 +507,18 @@ class Waypoint(models.Model):
         return os.path.join(settings.BASE_URL, self.URL, str(self.id))
 
     url = property(__get_absolute_url__)
-    
-        
+
+
 class GPXFile():
-    """Class to pocess a gpx file from upload or other place.
+    """Class to process a gpx file from upload or other place.
 
     Consumes an element from request.FILES, or an opened file.
 
     Will insert records into the database.
     """
 
-    gpx = None  # Parsed gpxpy object
-    trip = None  # A Trip object.
+    gpx = None     # Parsed gpxpy object
+    trip = None    # A Trip object.
     warnings = []  # List of strings.
 
     def __init__(self, gpxfile, trip):
@@ -620,7 +647,13 @@ class GPXFile():
 
             except Track.DoesNotExist:
 
-                trackdata = {"trip": trip, }
+                trackdata = {
+                    "trip": trip,
+                    "provenance": provenance,
+                }
+
+#               Load the trackdatadata dictionary from the gpx file
+#               attributes.
                 for attr in track.__dict__:
                     if attr in Track.__dict__:
                         trackdata[attr] = getattr(track, attr)
@@ -629,8 +662,13 @@ class GPXFile():
                 trackrc.save()
 
                 pointcount = 0
+
                 for segment in track.segments:
-                    segdata = {"track": trackrc, }
+                    segdata = {
+                        "track": trackrc,
+                        "provenance": provenance,
+                    }
+
                     for attr in segment.__dict__:
                         if attr in TrackSegment.__dict__:
                             segdata[attr] = getattr(segment, attr)
@@ -641,14 +679,17 @@ class GPXFile():
                     ordinal = 0
                     for point in segment.points:
 
-                        pointdata = {"segment": segrc, }
+                        pointdata = {
+                            "segment": segrc,
+                            "provenance": provenance,
+                        }
 
                         for attr in point.__dict__:
                             if attr in TrackPoint.__dict__:
                                 pointdata[attr] = getattr(point, attr)
 
                         pointdata['geom'] = Point(
-                            point.latitude, point.longitude, srid=SRID['WGS84']
+                            point.longitude, point.latitude, srid=SRID['WGS84']
                         )
                         pointdata['ordinal'] = ordinal
                         ordinal += 1
@@ -693,7 +734,7 @@ class GPXFile():
                     'status': None,
                     'provenance': provenance,
                     'geom': Point(
-                        waypoint.latitude, waypoint.longitude, srid=4326),
+                        waypoint.longitude, waypoint.latitude, srid=4326),
 
                 }
 

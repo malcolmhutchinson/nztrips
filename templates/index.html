@@ -10,10 +10,17 @@
     <tr>
 
         <td><a href='{{ trip.url }}'>{{ trip.name }}</a></td>
-
+        <td>{{ trip.description }}
 
     </tr>  
 {% endfor %}
 
 </table>
+
+<h3>Commands</h3>
+
+<p><a href='/trips/newtrip/'>Cretae a trip record</p>
+
+
+
 {% endblock %}

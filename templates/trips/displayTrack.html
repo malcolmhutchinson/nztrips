@@ -1,6 +1,6 @@
 <!-- trips/displayTrack.html -->
 
-<h3>Trip record</h3>
+<h3>Track record</h3>
 
 <table class='data'>
 
@@ -48,10 +48,33 @@
 
 <table class='data'>
 
-{% for segment in track.tracksegment_set.all %}
+{% for segment in track.segments %}
 
+    <tr>
+        <th colspan='4'>{{ segment }}</th>
+    </tr>
 
+    <tr>
+        <th>id</th>
+        <th>ord</th>
+        <th>time</th>
+        <th>lat long</th>
+        <th>ele</th>
+    </tr>
 
+{% for point in segment.points %}
+    <tr>
+
+        <td>{{ point.id }}</td>
+        <td>{{ point.ordinal }}</td>
+        <td>{{ point.time }}</td>
+        <td>{{ point.latitude }} {{ point.longitude }}</td>
+        <td>{{ point.elevation }}</td>
+
+    </tr>
+      
 {% endfor %}
+{% endfor %}
+
 </table>  
 <!-- end trips/displayTrack.html -->

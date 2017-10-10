@@ -21,6 +21,54 @@ def index(request):
     return render(request, template, context)
 
 
+def triptemplate(request, identifier):
+
+    trip = None
+    directory = None
+
+    trips = models.Trip.objects.filter(id__startswith=identifier)
+
+    if trips.count() == 1:
+        trip = trips[0]
+
+    template = 'trips/triptemplate.html'
+
+    if request.POST:
+
+        if request.FILES:
+            trip.save(files=request.FILES)
+
+        trip = models.Trip.objects.get(id=trip.id)
+        directory = trip.parse_filespace()
+
+    # Read and analyse any gpx files
+    gpxfiles = []
+
+    for gpxfile in trip.directory().model['gpx']:
+        filepath = os.path.join(trip.filespace(), gpxfile)
+        if os.path.isfile(filepath):
+            f = open(filepath)
+            gpxf = models.GPXFile(f, trip)
+            gpxfiles.append(gpxf.analyse())
+
+    if trip:
+        h1 = trip.name
+    else:
+        h1 = 'No trip record found'
+
+    context = {
+        'h1': h1,
+        'identifier': identifier,
+        'trip': trip,
+        'trips': trips,
+        'uploadFile': forms.UploadFile(),
+        'forms': True,
+        #'gpxfiles': gpxfiles,
+    }
+
+    return render(request, template, context)
+
+
 def viewdata(request, command, identifier):
     template = 'trips/data.html'
     route = None
@@ -44,6 +92,7 @@ def viewdata(request, command, identifier):
         'waypoint': waypoint,
     }
     return render(request, template, context)
+
 
 def viewfile(request, identifier, filename):
 
@@ -80,50 +129,3 @@ def viewfile(request, identifier, filename):
     return render(request, template, context)
 
 
-def triptemplate(request, identifier):
-
-    trip = None
-    directory = None
-    trips = models.Trip.objects.filter(id__contains=identifier)
-
-    if trips.count() == 1:
-        trip = trips[0]
-        directory = trip.parse_filespace()
-
-    template = 'trips/triptemplate.html'
-
-    if request.POST:
-
-        if request.FILES:
-            trip.save(files=request.FILES)
-
-        trip = models.Trip.objects.get(id=trip.id)
-        directory = trip.parse_filespace()
-
-    # Read and analyse any gpx files
-    gpxfiles = []
-    if directory:
-        for gpxfile in directory.model['gpx']:
-            filepath = os.path.join(trip.filespace(), gpxfile)
-            if os.path.isfile(filepath):
-                f = open(filepath)
-                gpxf = models.GPXFile(f, trip)
-                gpxfiles.append(gpxf.analyse())
-
-    if trip:
-        h1 = trip.name
-    else:
-        h1 = 'No trip record found'
-
-    context = {
-        'h1': h1,
-        'identifier': identifier,
-        'trip': trip,
-        'trips': trips,
-        'uploadFile': forms.UploadFile(),
-        'forms': True,
-        'directory': directory,
-        'gpxfiles': gpxfiles,
-    }
-
-    return render(request, template, context)
