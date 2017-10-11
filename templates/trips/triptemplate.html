@@ -124,10 +124,11 @@
 
 <div id='attachments'>
 
-  <h3>Files associated with this trip</h3>
+  <h3>Pictures</h3>
 
 <ol>
-{% for item in directory.model.all %}<li>{{ item }} </li>{% endfor %}
+  {% for item in trip.directory.model.figs %}
+    <li>{{ item }} </li>{% endfor %}
 </ol>
 </div>
 

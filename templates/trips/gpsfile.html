@@ -7,12 +7,9 @@ trip record <a href='{{ trip.url }}'>{{ trip.name }}</a>.</p>
 
 <ol class='warnings'>
 {% for warning in warnings %}
-
     <li>{{ warning|safe }}</li>
 {% endfor %}
-
 </ol>
-
 
 {% if gpxfile.routes %}
 <h3>Routes</h3>
@@ -21,10 +18,13 @@ trip record <a href='{{ trip.url }}'>{{ trip.name }}</a>.</p>
 
     <tr>
         <th>name</th>
+        <th>points</th>
+
     </tr>
 {% for route in gpxfile.routes %}
     <tr>
         <td>{{ route.name }}</td>
+        <td>{{ route.points }}</td>
     </tr>
 {% endfor %}
 </table>

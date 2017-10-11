@@ -39,7 +39,6 @@ def triptemplate(request, identifier):
             trip.save(files=request.FILES)
 
         trip = models.Trip.objects.get(id=trip.id)
-        directory = trip.parse_filespace()
 
     # Read and analyse any gpx files
     gpxfiles = []
@@ -103,7 +102,7 @@ def viewfile(request, identifier, filename):
     trip = models.Trip.objects.get(id__startswith=identifier)
     filepath = os.path.join(trip.filespace(), filename)
 
-    if filename in trip.parse_filespace().model['gpx']:
+    if filename in trip.directory().model['gpx']:
         h1 = 'Examine a gpx file'
         filetype = 'gpx'
 

@@ -134,7 +134,7 @@ class TripTemplate(models.Model):
         """
 
         dirname = self.name.replace(' ', '-').replace("'", "")
-        dirname = dirname + '_' + self.identifier()
+        #dirname = dirname + '_' + self.identifier()
 
         filepath = os.path.join(
             settings.STATICFILES_DIR, settings.BASE_FILESPACE, dirname
@@ -264,13 +264,20 @@ class Route(models.Model):
     provenance = models.CharField(max_length=255, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, editable=False)
 
-    geom = models.LineStringField(srid=SRID['WGS84'])
 
     def __unicode__(self):
         return self.name
 
-    def computeGPX(self):
-        """Return a GPX object (string) from this route."""
+    def points_from_line(self, commit=True):
+        """Create RoutePoint objects from the line geometry of this route.
+
+        Return a list of RoutePoint model objects. If commit is set to
+        False, these will be unsaved objects.
+
+        """
+
+        points = []
+        return points
 
 
 class RoutePoint(models.Model):
@@ -354,6 +361,14 @@ class Track(models.Model):
 
     url = property(__get_absolute_url__)
 
+    def convert_to_route(self):
+        """Return an unsaved Route object made of the points from this track.
+
+        No point objects, just a line geometry, and metadata.
+        """
+
+        return None
+
     def pointcount(self):
         pointcount = 0
         for seg in self.tracksegment_set.all():
@@ -389,7 +404,7 @@ class TrackSegment(models.Model):
         return TrackPoint.objects.filter(segment=self)
 
 class TrackPoint(models.Model):
-    """Incoming points associated with a track."""
+    """Incoming gps points associated with a track."""
 
     segment = models.ForeignKey(TrackSegment)
 
@@ -430,7 +445,7 @@ class TrackPoint(models.Model):
         ordering = ['segment', 'ordinal',]
 
 
-        
+
     def __unicode__(self):
         if self.name:
             return self.name
@@ -564,6 +579,16 @@ class GPXFile():
         """List basic data about each route."""
 
         result = []
+
+        for route in self.gpx.routes:
+            points = len(route.points)
+            routerec = {
+                "name": route.name,
+                "points": points,
+            }
+            result.append(routerec)
+
+
         return result
 
     def analyse_tracks(self):
@@ -605,24 +630,95 @@ class GPXFile():
 
         return result
 
-    def inject(self):
+    def inject(
+            self,
+            comment=None, description=None, gtype=None,
+            owner=None, group=None,
+    ):
         """Sequencer for the injection operation. Calls waypoints etc."""
 
         warnings = []
 
-        warnings.extend(self.inject_routes(self.gpx, self.trip))
-        warnings.extend(self.inject_tracks(self.gpx, self.trip))
-        warnings.extend(self.inject_waypoints(self.gpx, self.trip))
+        warnings.extend(self.inject_routes(
+            self.gpx, self.trip,
+            comment=comment, description=description, gtype=gtype,
+            owner=owner, group=group,
+        ))
+
+        warnings.extend(self.inject_tracks(
+            self.gpx, self.trip,
+            comment=comment, description=description, gtype=gtype,
+            owner=owner, group=group,
+        ))
+
+        warnings.extend(self.inject_waypoints(
+            self.gpx, self.trip,
+            comment=comment, description=description, gtype=gtype,
+            owner=owner, group=group,
+        ))
 
         return warnings
 
-    def inject_routes(self, gpx, trip):
-
+    def inject_routes(
+            self, gpx, trip,
+            comment=None, description=None, gtype=None,
+            owner=None, group=None,
+    ):
         warnings = []
 
+        provenance = self.gpxfile.name
+
+        for route in gpx.routes:
+
+            try:
+                existing = Route.objects.get(name=route.name)
+                warnings.append(
+                    "Route record already exists for <tt>" + route.name +
+                    "</tt>."
+                )
+            except Route.DoesNotExist:
+
+                routedata = {
+                    'owner': owner,
+                    'group': group,
+                }
+
+#               Load the routedata dictionary from the gpx file attributes.
+                for attr in route.__dict__:
+                    if attr in Route.__dict__:
+                        routedata[attr] = getattr(route, attr)
+
+                routerec = Route(**routedata)
+                routerec.save()
+                routerec.trips.add(trip)
+
+                ordinal = 0
+                for point in route.points:
+                    pointdata = {
+                        'provenance': provenance,
+                        'geom': Point(
+                            point.longitude, point.latitude, srid=SRID['WGS84']
+                        ),
+                        'ordinal': ordinal,
+                    }
+                    for attr in point.__dict__:
+                        if attr in RoutePoint.__dict__:
+                            routedata[attr] = getattr(point, attr)
+
+                    pointrec = RoutePoint(**pointdata)
+                    pointrc.save()
+                    ordinal += 1
+
+                warnings.append(
+                    "Injected route record <tt>" + route.name +
+                    "</tt> with " + str(ordinal + 1) + " points."
+                )
+
         return warnings
 
-    def inject_tracks(self, gpx, trip):
+    def inject_tracks(self, gpx, trip,
+                      comment=None, description=None, gtype=None):
+
         """Insert records into db for tracks, segments and points.
 
         Given a parsed gpxpy object, and a Trip object, iterate
@@ -662,11 +758,13 @@ class GPXFile():
                 trackrc.save()
 
                 pointcount = 0
+                seg_ordinal = 0
 
                 for segment in track.segments:
                     segdata = {
                         "track": trackrc,
                         "provenance": provenance,
+                        "ordinal": seg_ordinal,
                     }
 
                     for attr in segment.__dict__:
@@ -675,8 +773,9 @@ class GPXFile():
 
                     segrc = TrackSegment(**segdata)
                     segrc.save()
+                    seg_ordinal += 1
 
-                    ordinal = 0
+                    point_ordinal = 0
                     for point in segment.points:
 
                         pointdata = {
@@ -691,8 +790,8 @@ class GPXFile():
                         pointdata['geom'] = Point(
                             point.longitude, point.latitude, srid=SRID['WGS84']
                         )
-                        pointdata['ordinal'] = ordinal
-                        ordinal += 1
+                        pointdata['ordinal'] = point_ordinal
+                        point_ordinal += 1
                         pointcount += 1
 
                         pointrc = TrackPoint(**pointdata)
@@ -706,7 +805,8 @@ class GPXFile():
 
         return warnings
 
-    def inject_waypoints(self, gpx, trip):
+    def inject_waypoints(self, gpx, trip,
+                         comment=None, description=None, gtype=None):
         """Extract waypoint data from gpxpy object, insert records into db.
         """
 
