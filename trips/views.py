@@ -14,12 +14,24 @@ def index(request):
     context = {
         'h1': 'Trip and template records',
         'title': 'The title',
-        'tripForm': forms.TripRecord(),
         'trips': models.Trip.objects.all(),
     }
 
     return render(request, template, context)
 
+
+def newtrip(request):
+
+    template = 'trips/newtrip.html'
+    h1 = 'Create a new trip record'
+
+    context = {
+        'h1': h1,
+        'title': 'NZtrips | ' + h1,
+        'tripForm': forms.TripRecord(),
+    }
+
+    return render(request, template, context)    
 
 def triptemplate(request, identifier):
 
