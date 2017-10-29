@@ -21,14 +21,26 @@ def index(request):
 
 
 def newtrip(request):
+    """Create a new trip record."""
 
     template = 'trips/newtrip.html'
     h1 = 'Create a new trip record'
+    tripForm = forms.TripRecord()
 
+    if request.POST:
+        tripForm = forms.TripRecord(request.POST)
+        if tripForm.is_valid():
+            trip = tripForm.save()
+            #trip.save()
+            print "Now we have a new trip.", trip.name
+
+
+    
     context = {
         'h1': h1,
         'title': 'NZtrips | ' + h1,
-        'tripForm': forms.TripRecord(),
+        'tripForm': tripForm,
+        'forms': True,
     }
 
     return render(request, template, context)    

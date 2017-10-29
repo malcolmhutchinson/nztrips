@@ -1,0 +1,19 @@
+{% extends 'framework.html' %}{% block main %}{% load staticfiles %}
+
+<h1>Create a new trip record</h1>
+
+<p>Later, you will be able to create a record as a new trip record, or
+from a template. At the moment, it has to be a new trip.</p>
+
+
+<table>
+{{ tripForm }}
+</table>
+
+<input type='submit' name='command' value='save' />
+
+
+
+
+
+{% endblock %}

@@ -57,7 +57,7 @@ class TripTemplate(models.Model):
     trip_type = models.CharField(
         max_length=64, choices=TRIP_TYPE, default='tramping')
 
-    name = models.CharField(max_length=255, blank=True, null=True)
+    name = models.CharField(max_length=255)
     subject = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)

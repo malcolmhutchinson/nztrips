@@ -11,7 +11,14 @@ class TripRecord(forms.ModelForm):
             'subject',
             'description',
             'location',
+            'days_length',
         ]
+
+        labels = {
+            'days_length': 'Duration (days)',
+
+
+        }
 
 class UploadFile(forms.Form):
     uploadFile = forms.FileField(required=False)
