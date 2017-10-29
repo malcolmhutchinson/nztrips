@@ -13,6 +13,16 @@ import webnote
 
 import trips.settings as settings
 
+MODE = (
+    ('aircraft', 'aircraft'),
+    ('airship', 'airship'),   
+    ('bicycle', 'bicycle'),
+    ('boat', 'boat'),
+    ('car', 'car'),
+    ('train', 'train'),
+    ('tramping', 'tramping'),
+)
+
 SRID = {
     'NZMG': 27200,
     'NZTM': 2193,
@@ -152,6 +162,34 @@ class TripTemplate(models.Model):
 class Template(TripTemplate):
     """A Template is a general plan for an expedition.
     """
+
+class TripTemplateLeg():
+    """A leg is a single mode journey, part of a trip or trip template.
+
+    Abstract class, providing for tables linked to templates and to
+    trips.
+
+    """
+
+
+    
+    #template = models.ForeignKey(Template)
+    #trip = models.ForeignKey(Trip)
+
+    mode = models.CharField(
+        max_length=255, blank=True, null=True, choices=MODE,
+    )
+
+    
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    group = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    
+    class Meta:
+        abstract = True
 
 
 class TemplateNote(models.Model):
